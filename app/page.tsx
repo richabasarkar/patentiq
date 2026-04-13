@@ -10,8 +10,6 @@ interface ExaminerResult {
   grant_rate_3yr?: number;
 }
 
-// ─── Search autocomplete — logic untouched ────────────────────────────────────
-
 function ExaminerSearch() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ExaminerResult[]>([]);
@@ -123,51 +121,22 @@ function ExaminerSearch() {
   );
 }
 
-// ─── Static sections ──────────────────────────────────────────────────────────
-
 const steps = [
-  {
-    n: '1',
-    title: 'Search any examiner',
-    desc: 'Look up any of the 18,110 active USPTO patent examiners by name in seconds.',
-  },
-  {
-    n: '2',
-    title: 'See their data',
-    desc: 'Instantly view grant rate, average pendency, total applications, and prosecution patterns.',
-  },
-  {
-    n: '3',
-    title: 'File smarter',
-    desc: 'Build a tailored prosecution strategy before you respond to an office action.',
-  },
+  { n: '1', title: 'Search any examiner', desc: 'Look up any of the 18,110 active USPTO patent examiners by name in seconds.' },
+  { n: '2', title: 'See their data', desc: 'Instantly view grant rate, average pendency, total applications, and prosecution patterns.' },
+  { n: '3', title: 'File smarter', desc: 'Build a tailored prosecution strategy before you respond to an office action.' },
 ];
 
 const features = [
-  {
-    stat: '18,110',
-    label: 'Examiners',
-    desc: 'Complete USPTO examiner database — every active examiner, fully searchable.',
-  },
-  {
-    stat: 'Free',
-    label: 'To Search',
-    desc: 'No account, no paywall. Basic examiner stats are open to everyone.',
-  },
-  {
-    stat: 'Big-firm',
-    label: 'Intel',
-    desc: 'The same prosecution data large firms pay thousands for, available to all.',
-  },
+  { stat: '18,110', label: 'Examiners', desc: 'Complete USPTO examiner database — every active examiner, fully searchable.' },
+  { stat: 'Free', label: 'To Search', desc: 'No account, no paywall. Basic examiner stats are open to everyone.' },
+  { stat: 'Big-firm', label: 'Intel', desc: 'The same prosecution data large firms pay thousands for, available to all.' },
 ];
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
-      {/* Nav */}
       <header className="w-full bg-white border-b border-gray-200 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto h-14 flex items-center justify-between">
           <span className="text-lg font-bold text-gray-900 tracking-tight">PatentIQ</span>
@@ -177,7 +146,6 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero */}
       <section className="w-full px-4 sm:px-6 pt-20 pb-16 sm:pt-28 sm:pb-20 flex flex-col items-center text-center">
         <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-4">
           USPTO Examiner Intelligence
@@ -188,30 +156,18 @@ export default function HomePage() {
         <p className="mt-4 text-gray-500 text-base sm:text-lg max-w-md">
           Search 18,110 USPTO patent examiners by name — see grant rates, pendency data, and prosecution patterns instantly.
         </p>
-
-        {/* Search */}
         <div className="w-full max-w-xl mt-10">
           <ExaminerSearch />
         </div>
-
-        {/* Stat pills */}
         <div className="flex flex-wrap justify-center gap-2 mt-6">
-          {[
-            '18,110 Examiners',
-            '14M+ Applications Analyzed',
-            'Free to Search',
-          ].map((label) => (
-            <span
-              key={label}
-              className="px-4 py-1.5 rounded-full bg-white border border-gray-200 text-sm text-gray-500 font-medium shadow-sm"
-            >
+          {['18,110 Examiners', '14M+ Applications Analyzed', 'Free to Search'].map((label) => (
+            <span key={label} className="px-4 py-1.5 rounded-full bg-white border border-gray-200 text-sm text-gray-500 font-medium shadow-sm">
               {label}
             </span>
           ))}
         </div>
       </section>
 
-      {/* How it works */}
       <section className="w-full px-4 sm:px-6 py-16 sm:py-20 bg-white border-t border-gray-100">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-center text-2xl sm:text-3xl font-bold text-gray-900 mb-2">How it works</h2>
@@ -230,11 +186,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Why PatentIQ */}
-      <p className="text-center text-gray-500 text-sm sm:text-base mb-12">Built for practitioners who want an edge.</p>
+      <section className="w-full px-4 sm:px-6 py-16 sm:py-20 bg-gray-50 border-t border-gray-100">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-center text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Why PatentIQ</h2>
-          <p className="text-center text-gray-500 text-sm sm:text-base mb-12">Built for practitioners who want an edge.</p>
+          <p className="text-center text-gray-500 text-sm sm:text-base mb-10">Built for practitioners who want an edge.</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {features.map((f) => (
               <div
@@ -256,7 +211,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="w-full border-t border-gray-200 bg-white px-4 sm:px-6 py-6 mt-auto">
         <p className="text-center text-xs text-gray-400">
           PatentIQ · Data sourced from USPTO PatEx dataset · Not legal advice
