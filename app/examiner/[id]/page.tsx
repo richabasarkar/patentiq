@@ -100,8 +100,8 @@ function RejectionActivity({ codes }: { codes: { non_final: number; final: numbe
   const max = Math.max(codes.non_final, codes.final, 1);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 sm:p-10">
-      <div className="flex items-start justify-between mb-6">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col gap-6">
+      <div className="flex items-start justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Rejection Activity</h2>
         <div className="text-right">
           <p className="text-3xl font-bold text-gray-900">{codes.total.toLocaleString()}</p>
@@ -110,10 +110,10 @@ function RejectionActivity({ codes }: { codes: { non_final: number; final: numbe
       </div>
 
       <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center text-sm">
             <span className="font-medium text-amber-700">Non-Final</span>
-            <span className="text-gray-500 tabular-nums">{codes.non_final.toLocaleString()}</span>
+            <span className="text-gray-500 tabular-nums font-medium">{codes.non_final.toLocaleString()}</span>
           </div>
           <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
             <div
@@ -123,10 +123,10 @@ function RejectionActivity({ codes }: { codes: { non_final: number; final: numbe
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center text-sm">
             <span className="font-medium text-red-700">Final</span>
-            <span className="text-gray-500 tabular-nums">{codes.final.toLocaleString()}</span>
+            <span className="text-gray-500 tabular-nums font-medium">{codes.final.toLocaleString()}</span>
           </div>
           <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
             <div
@@ -137,7 +137,7 @@ function RejectionActivity({ codes }: { codes: { non_final: number; final: numbe
         </div>
       </div>
 
-      <div className="mt-5 pt-5 border-t border-gray-100 flex gap-6 text-xs text-gray-400">
+      <div className="pt-4 border-t border-gray-100 flex gap-6 text-xs text-gray-400">
         <span>
           Non-final ratio:{' '}
           <span className="font-semibold text-amber-600">
@@ -200,17 +200,16 @@ function ExaminerInterviews({ count, allowanceRate }: { count: number; allowance
       : 'text-red-700 bg-red-50 border-red-200';
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 sm:p-10">
-      <h2 className="text-lg font-semibold text-gray-900 mb-6">Examiner Interviews</h2>
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col gap-6">
+      <h2 className="text-lg font-semibold text-gray-900">Examiner Interviews</h2>
 
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8">
-        <div className="flex flex-col items-center gap-1 shrink-0">
+      <div className="flex items-center justify-center gap-10">
+        <div className="flex flex-col items-center gap-1">
           <p className="text-5xl font-bold text-gray-900">{count.toLocaleString()}</p>
           <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Total Interviews</p>
         </div>
 
-        <div className="hidden sm:block w-px self-stretch bg-gray-100" />
-        <div className="block sm:hidden h-px w-full bg-gray-100" />
+        <div className="w-px self-stretch bg-gray-100" />
 
         <div className="flex flex-col items-center gap-2">
           <InterviewGauge rate={allowanceRate} />
@@ -218,7 +217,7 @@ function ExaminerInterviews({ count, allowanceRate }: { count: number; allowance
         </div>
       </div>
 
-      <div className={`mt-6 rounded-xl border px-4 py-3 text-sm font-medium ${noteColor}`}>
+      <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${noteColor}`}>
         {note}
       </div>
     </div>
@@ -274,8 +273,8 @@ function GrantRateTrend({ grantRateByYear, overallRate }: { grantRateByYear: Rec
   const yTicks = [minRate, (minRate + maxRate) / 2, maxRate].map((v) => Math.round(v));
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 sm:p-10">
-      <h2 className="text-lg font-semibold text-gray-900 mb-6">Grant Rate Trend</h2>
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col gap-6">
+      <h2 className="text-lg font-semibold text-gray-900">Grant Rate Trend</h2>
 
       <div className="w-full overflow-x-auto">
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" preserveAspectRatio="xMidYMid meet" aria-label="Grant rate by year line chart">
@@ -311,7 +310,7 @@ function GrantRateTrend({ grantRateByYear, overallRate }: { grantRateByYear: Rec
         </svg>
       </div>
 
-      <div className={`mt-4 rounded-xl border px-4 py-3 text-sm font-medium ${trendColor}`}>
+      <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${trendColor}`}>
         {trendLabel}
       </div>
     </div>
@@ -320,8 +319,8 @@ function GrantRateTrend({ grantRateByYear, overallRate }: { grantRateByYear: Rec
 
 function ArtUnitContext({ artUnit }: { artUnit?: string | number }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 sm:p-10">
-      <div className="flex items-start justify-between mb-5">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col gap-5">
+      <div className="flex items-start justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Art Unit Context</h2>
         <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 bg-gray-100 border border-gray-200 rounded-full px-3 py-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -333,7 +332,7 @@ function ArtUnitContext({ artUnit }: { artUnit?: string | number }) {
       </div>
 
       {artUnit && (
-        <div className="mb-5">
+        <div>
           <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">Art Unit</p>
           <p className="text-4xl font-bold text-gray-900">{artUnit}</p>
         </div>
@@ -398,15 +397,18 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
 
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-10 sm:py-14">
-      <div className="max-w-2xl mx-auto flex flex-col gap-6">
+      <div className="max-w-5xl mx-auto flex flex-col gap-6">
 
+        {/* Back link */}
         <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 w-fit">
           ← PatentIQ
         </Link>
 
+        {/* Main card — full width */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div className={`h-2 w-full ${colors.banner}`} />
-          <div className="p-8 sm:p-10 flex flex-col items-center gap-8">
+          <div className="p-6 sm:p-10 flex flex-col items-center gap-8">
+
             <div className="text-center">
               <h1 className="text-3xl font-bold text-gray-900">{examiner.name}</h1>
               {examiner.art_unit_number && (
@@ -417,46 +419,59 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
             {examiner.grant_rate_3yr != null && <GrantGauge rate={examiner.grant_rate_3yr} />}
             {examiner.grant_rate_3yr != null && <USPTOBar rate={examiner.grant_rate_3yr} />}
 
-            <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <div className="flex flex-row gap-3 w-full max-w-lg mx-auto">
               <StatCard label="Total Applications" value={examiner.total_applications?.toLocaleString()} />
               <StatCard label="Avg Pendency (mo)" value={examiner.pendency_months != null ? examiner.pendency_months.toFixed(1) : undefined} />
               <StatCard label="Art Unit" value={examiner.art_unit_number} accent={examiner.grant_rate_3yr != null ? { bg: colors.bg, border: `border ${colors.border}` } : undefined} />
             </div>
+
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 sm:p-10">
-          <h2 className="text-lg font-semibold text-gray-900 mb-5">Prosecution Strategy Notes</h2>
-          <ul className="flex flex-col gap-4">
-            {strategyPoints(rate).map((point, i) => (
-              <li key={i} className="flex gap-3 text-sm text-gray-600 leading-relaxed">
-                <span className="shrink-0 w-2 h-2 rounded-full self-start relative top-[5px]" style={{ backgroundColor: colors.hex }} />
-                {point}
-              </li>
-            ))}
-          </ul>
+        {/* 2-column grid on desktop, single column on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
+
+          {/* LEFT column */}
+          <div className="flex flex-col gap-6">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
+              <h2 className="text-lg font-semibold text-gray-900 mb-5">Prosecution Strategy Notes</h2>
+              <ul className="flex flex-col gap-4">
+                {strategyPoints(rate).map((point, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-gray-600 leading-relaxed">
+                    <span className="shrink-0 w-2 h-2 rounded-full self-start relative top-[5px]" style={{ backgroundColor: colors.hex }} />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {examiner.rejection_codes && (
+              <RejectionActivity codes={examiner.rejection_codes} />
+            )}
+          </div>
+
+          {/* RIGHT column */}
+          <div className="flex flex-col gap-6">
+            {examiner.interview_count != null && examiner.interview_allowance_rate != null && (
+              <ExaminerInterviews
+                count={examiner.interview_count}
+                allowanceRate={examiner.interview_allowance_rate}
+              />
+            )}
+
+            {examiner.grant_rate_by_year && (
+              <GrantRateTrend
+                grantRateByYear={examiner.grant_rate_by_year}
+                overallRate={rate}
+              />
+            )}
+
+            <ArtUnitContext artUnit={examiner.art_unit_number} />
+          </div>
+
         </div>
 
-        {examiner.rejection_codes && (
-          <RejectionActivity codes={examiner.rejection_codes} />
-        )}
-
-        {examiner.interview_count != null && examiner.interview_allowance_rate != null && (
-          <ExaminerInterviews
-            count={examiner.interview_count}
-            allowanceRate={examiner.interview_allowance_rate}
-          />
-        )}
-
-        {examiner.grant_rate_by_year && (
-          <GrantRateTrend
-            grantRateByYear={examiner.grant_rate_by_year}
-            overallRate={rate}
-          />
-        )}
-
-        <ArtUnitContext artUnit={examiner.art_unit_number} />
-
+        {/* Footer — full width */}
         {formattedDate && (
           <p className="text-xs text-gray-400 text-center">Data last updated: {formattedDate}</p>
         )}
