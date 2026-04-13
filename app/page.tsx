@@ -231,7 +231,7 @@ export default function HomePage() {
       </section>
 
       {/* Why PatentIQ */}
-      <section className="w-full px-4 sm:px-6 py-16 sm:py-20 bg-gray-50 border-t border-gray-100">
+      <p className="text-center text-gray-500 text-sm sm:text-base mb-12">Built for practitioners who want an edge.</p>
         <div className="max-w-4xl mx-auto">
           <h2 className="text-center text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Why PatentIQ</h2>
           <p className="text-center text-gray-500 text-sm sm:text-base mb-12">Built for practitioners who want an edge.</p>
@@ -239,12 +239,15 @@ export default function HomePage() {
             {features.map((f) => (
               <div
                 key={f.label}
-                className="bg-white rounded-2xl border border-gray-200 px-6 py-7 flex flex-col gap-2"
+                className="bg-white rounded-2xl border border-gray-200 px-8 py-8 flex flex-col gap-4 hover:shadow-md transition-shadow"
               >
+                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <span className="text-blue-600 text-lg font-bold">{f.stat.charAt(0)}</span>
+                </div>
                 <div>
-                  <span className="text-3xl font-bold text-gray-900">{f.stat}</span>
+                  <span className="text-2xl font-bold text-gray-900">{f.stat}</span>
                   {' '}
-                  <span className="text-base font-semibold text-gray-400">{f.label}</span>
+                  <span className="text-sm font-semibold text-gray-400 uppercase tracking-wide">{f.label}</span>
                 </div>
                 <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
               </div>
