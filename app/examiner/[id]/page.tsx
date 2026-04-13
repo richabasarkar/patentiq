@@ -13,8 +13,8 @@ function GrantGauge({ rate }: { rate: number }) {
   const strokeWidth = 16;
   const radius = (size - strokeWidth) / 2;
   const center = size / 2;
-  const startAngle = -190;
-  const totalArc = 200;
+  const startAngle = -90;
+  const totalArc = 360;
   const clampedRate = Math.min(100, Math.max(0, rate));
   const fillArc = (clampedRate / 100) * totalArc;
   const { hex, label } = rateColor(rate);
