@@ -2,22 +2,26 @@ import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { Examiner } from '@/lib/types';
 
+function rateColor(rate: number) {
+  if (rate >= 70) return { hex: '#16a34a', bg: 'bg-green-50', border: 'border-green-200', banner: 'bg-green-500', label: 'Favorable' };
+  if (rate >= 50) return { hex: '#d97706', bg: 'bg-amber-50', border: 'border-amber-200', banner: 'bg-amber-500', label: 'Moderate' };
+  return { hex: '#dc2626', bg: 'bg-red-50', border: 'border-red-200', banner: 'bg-red-500', label: 'Selective' };
+}
+
 function GrantGauge({ rate }: { rate: number }) {
-  const size = 180;
-  const strokeWidth = 14;
+  const size = 220;
+  const strokeWidth = 16;
   const radius = (size - strokeWidth) / 2;
   const center = size / 2;
   const startAngle = -210;
   const totalArc = 240;
   const clampedRate = Math.min(100, Math.max(0, rate));
   const fillArc = (clampedRate / 100) * totalArc;
+  const { hex, label } = rateColor(rate);
 
   function polarToCartesian(angleDeg: number) {
     const rad = ((angleDeg - 90) * Math.PI) / 180;
-    return {
-      x: center + radius * Math.cos(rad),
-      y: center + radius * Math.sin(rad),
-    };
+    return { x: center + radius * Math.cos(rad), y: center + radius * Math.sin(rad) };
   }
 
   function arcPath(startDeg: number, endDeg: number) {
@@ -29,31 +33,76 @@ function GrantGauge({ rate }: { rate: number }) {
 
   const trackPath = arcPath(startAngle, startAngle + totalArc);
   const fillPath = fillArc > 0 ? arcPath(startAngle, startAngle + fillArc) : null;
-  const color = rate >= 70 ? '#16a34a' : rate >= 50 ? '#d97706' : '#dc2626';
-  const label = rate >= 70 ? 'Favorable' : rate >= 50 ? 'Moderate' : 'Selective';
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <div className="flex flex-col items-center gap-1">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-label={`Grant rate gauge: ${clampedRate.toFixed(1)}%`}>
         <path d={trackPath} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} strokeLinecap="round" />
         {fillPath && (
-          <path d={fillPath} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+          <path d={fillPath} fill="none" stroke={hex} strokeWidth={strokeWidth} strokeLinecap="round" />
         )}
-        <text x={center} y={center - 6} textAnchor="middle" dominantBaseline="middle" fontSize="28" fontWeight="600" fill={color}>
+        {/* Rate number — positioned higher in center */}
+        <text x={center} y={center - 14} textAnchor="middle" dominantBaseline="middle" fontSize="34" fontWeight="600" fill={hex}>
           {clampedRate.toFixed(1)}%
         </text>
-        <text x={center} y={center + 20} textAnchor="middle" dominantBaseline="middle" fontSize="12" fill="#6b7280">
+        {/* Label below the number */}
+        <text x={center} y={center + 18} textAnchor="middle" dominantBaseline="middle" fontSize="13" fill="#9ca3af">
           {label}
         </text>
       </svg>
-      <p className="text-sm font-medium text-gray-500 -mt-2">Grant Rate</p>
+      {/* "Grant Rate" sits outside the SVG — no overlap possible */}
+      <p className="text-sm font-medium text-gray-400 -mt-6">Grant Rate (3yr)</p>
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string | number | undefined }) {
+function USPTOBar({ rate }: { rate: number }) {
+  const USPTO_AVG = 67;
+  const clampedRate = Math.min(100, Math.max(0, rate));
+  const { hex } = rateColor(rate);
+
   return (
-    <div className="bg-gray-50 rounded-xl border border-gray-200 px-5 py-4 flex flex-col gap-1 flex-1 min-w-0">
+    <div className="w-full max-w-sm mx-auto flex flex-col gap-2">
+      <div className="flex justify-between text-xs text-gray-400 font-medium">
+        <span>0%</span>
+        <span>vs. USPTO average</span>
+        <span>100%</span>
+      </div>
+      <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
+        {/* USPTO average marker */}
+        <div
+          className="absolute top-0 h-full w-0.5 bg-gray-400 z-10"
+          style={{ left: `${USPTO_AVG}%` }}
+        />
+        {/* Examiner fill */}
+        <div
+          className="absolute top-0 left-0 h-full rounded-full transition-all"
+          style={{ width: `${clampedRate}%`, backgroundColor: hex, opacity: 0.85 }}
+        />
+      </div>
+      <div className="flex justify-between text-xs text-gray-400">
+        <span style={{ color: hex }} className="font-semibold">{clampedRate.toFixed(1)}% this examiner</span>
+        <span className="text-gray-400">{USPTO_AVG}% USPTO avg</span>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string | number | undefined;
+  accent?: { bg: string; border: string };
+}) {
+  return (
+    <div
+      className={`rounded-xl border px-5 py-4 flex flex-col gap-1 flex-1 min-w-0 text-center ${
+        accent ? `${accent.bg} ${accent.border}` : 'bg-gray-50 border-gray-200'
+      }`}
+    >
       <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
       <p className="text-2xl font-semibold text-gray-900">
         {value ?? <span className="text-gray-400 text-base font-normal">—</span>}
@@ -126,6 +175,8 @@ export default async function ExaminerPage({
   }
 
   const rate = examiner.grant_rate_3yr ?? 0;
+  const colors = rateColor(rate);
+
   const formattedDate = examiner.updated_at
     ? new Date(examiner.updated_at).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -135,47 +186,77 @@ export default async function ExaminerPage({
     : null;
 
   return (
-    <main className="min-h-screen bg-gray-100 px-4 py-10">
+    <main className="min-h-screen bg-gray-100 px-4 py-10 sm:py-14">
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
 
-        <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 w-fit">
-          PatentIQ
+        {/* Back link */}
+        <Link
+          href="/"
+          className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 w-fit"
+        >
+          ← PatentIQ
         </Link>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 flex flex-col items-center gap-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900">{examiner.name}</h1>
-            {examiner.art_unit_number && (
-              <p className="text-gray-400 mt-1 text-base">Art Unit {examiner.art_unit_number}</p>
+        {/* Main card */}
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          {/* Colored top banner */}
+          <div className={`h-2 w-full ${colors.banner}`} />
+
+          <div className="p-8 sm:p-10 flex flex-col items-center gap-8">
+            {/* Name + art unit */}
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-gray-900">{examiner.name}</h1>
+              {examiner.art_unit_number && (
+                <p className="text-gray-400 mt-1 text-base">Art Unit {examiner.art_unit_number}</p>
+              )}
+            </div>
+
+            {/* Gauge */}
+            {examiner.grant_rate_3yr != null && (
+              <GrantGauge rate={examiner.grant_rate_3yr} />
             )}
-          </div>
 
-          {examiner.grant_rate_3yr != null && (
-            <GrantGauge rate={examiner.grant_rate_3yr} />
-          )}
+            {/* USPTO comparison bar */}
+            {examiner.grant_rate_3yr != null && (
+              <USPTOBar rate={examiner.grant_rate_3yr} />
+            )}
 
-          <div className="flex gap-3 w-full flex-wrap justify-center">
-            <StatCard label="Total Applications" value={examiner.total_applications?.toLocaleString()} />
-            <StatCard
-              label="Avg Pendency (months)"
-              value={examiner.pendency_months != null ? examiner.pendency_months.toFixed(1) : undefined}
-            />
-            <StatCard label="Art Unit" value={examiner.art_unit_number} />
+            {/* Stat cards — stacked on mobile, row on sm+ */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <StatCard
+                label="Total Applications"
+                value={examiner.total_applications?.toLocaleString()}
+              />
+              <StatCard
+                label="Avg Pendency (mo)"
+                value={examiner.pendency_months != null ? examiner.pendency_months.toFixed(1) : undefined}
+              />
+              <StatCard
+                label="Art Unit"
+                value={examiner.art_unit_number}
+                accent={examiner.grant_rate_3yr != null ? { bg: colors.bg, border: `border ${colors.border}` } : undefined}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Prosecution Strategy Notes</h2>
-          <ul className="flex flex-col gap-3">
+        {/* Strategy card */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 sm:p-10">
+          <h2 className="text-lg font-semibold text-gray-900 mb-5">Prosecution Strategy Notes</h2>
+          <ul className="flex flex-col gap-4">
             {strategyPoints(rate).map((point, i) => (
               <li key={i} className="flex gap-3 text-sm text-gray-600 leading-relaxed">
-                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-gray-400 self-start relative top-[5px]" />
+                <span
+                  className="shrink-0 w-2 h-2 rounded-full self-start relative top-[5px]"
+                  style={{ backgroundColor: colors.hex }}
+                />
                 {point}
               </li>
             ))}
           </ul>
         </div>
 
+        {/* Footer */}
         {formattedDate && (
           <p className="text-xs text-gray-400 text-center">Data last updated: {formattedDate}</p>
         )}
