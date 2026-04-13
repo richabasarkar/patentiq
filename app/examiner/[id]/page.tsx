@@ -51,7 +51,7 @@ function GrantGauge({ rate }: { rate: number }) {
         </text>
       </svg>
       {/* "Grant Rate" sits outside the SVG — no overlap possible */}
-      <p className="text-sm font-medium text-gray-400 mt-4">Grant Rate (3yr)</p>
+      <p className="text-sm font-medium text-gray-400 mt-1">Grant Rate (3yr)</p>
     </div>
   );
 }
