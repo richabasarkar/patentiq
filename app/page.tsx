@@ -83,10 +83,7 @@ function ExaminerSearch() {
           onKeyDown={handleKeyDown}
           placeholder="Search by examiner name…"
           autoComplete="off"
-          aria-label="Search patent examiners"
-          aria-autocomplete="list"
-          aria-expanded={isOpen}
-          className="w-full pl-11 pr-4 py-4 rounded-xl border border-white/10 text-white placeholder-gray-500 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/5 backdrop-blur-sm shadow-lg"
+          className="w-full pl-11 pr-4 py-4 rounded-2xl border border-gray-200 text-gray-900 placeholder-gray-400 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
         />
         {isLoading && (
           <span className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -96,24 +93,14 @@ function ExaminerSearch() {
           </span>
         )}
       </div>
-
       {isOpen && results.length > 0 && (
-        <ul role="listbox" className="absolute z-20 mt-2 w-full bg-[#0f1e35] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+        <ul role="listbox" className="absolute z-20 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden">
           {results.map((examiner, i) => (
-            <li
-              key={examiner.id}
-              role="option"
-              aria-selected={i === activeIndex}
-              onMouseDown={() => handleSelect(examiner)}
-              onMouseEnter={() => setActiveIndex(i)}
-              className={`flex items-center justify-between px-4 py-3 cursor-pointer text-sm transition-colors ${
-                i === activeIndex ? 'bg-white/10' : 'hover:bg-white/5'
-              } ${i !== 0 ? 'border-t border-white/5' : ''}`}
-            >
-              <span className="font-medium text-white">{examiner.name}</span>
-              {examiner.art_unit_number && (
-                <span className="text-xs text-gray-400 ml-3 shrink-0">Art Unit {examiner.art_unit_number}</span>
-              )}
+            <li key={examiner.id} role="option" aria-selected={i === activeIndex}
+              onMouseDown={() => handleSelect(examiner)} onMouseEnter={() => setActiveIndex(i)}
+              className={`flex items-center justify-between px-4 py-3 cursor-pointer text-sm transition-colors ${i === activeIndex ? 'bg-blue-50' : 'hover:bg-gray-50'} ${i !== 0 ? 'border-t border-gray-100' : ''}`}>
+              <span className="font-medium text-gray-900">{examiner.name}</span>
+              {examiner.art_unit_number && <span className="text-xs text-gray-400 ml-3 shrink-0">Art Unit {examiner.art_unit_number}</span>}
             </li>
           ))}
         </ul>
@@ -123,75 +110,77 @@ function ExaminerSearch() {
 }
 
 const steps = [
-  { n: '1', title: 'Search any examiner', desc: 'Look up any of the 18,110 active USPTO patent examiners by name in seconds.' },
-  { n: '2', title: 'See their data', desc: 'Instantly view grant rate, pendency, rejection patterns, and interview success rates.' },
-  { n: '3', title: 'File smarter', desc: 'Build a tailored prosecution strategy before you respond to an office action.' },
+  { n: '01', title: 'Search any examiner', desc: 'Look up any of the 18,110 active USPTO patent examiners by name in seconds.' },
+  { n: '02', title: 'See their data', desc: 'Instantly view grant rate, pendency, rejection patterns, and interview success rates.' },
+  { n: '03', title: 'File smarter', desc: 'Build a tailored prosecution strategy before you respond to an office action.' },
 ];
 
 const features = [
-  { stat: '18,110', label: 'Examiners', desc: 'Complete USPTO examiner database — every active examiner, fully searchable.' },
-  { stat: 'Free', label: 'To Search', desc: 'No account, no paywall. Basic examiner stats are open to everyone.' },
-  { stat: 'AI', label: 'Summaries', desc: 'Plain-language prosecution strategy summaries powered by Claude AI.' },
+  { stat: '18,110', label: 'Examiners', desc: 'Complete USPTO examiner database — every active examiner, fully searchable.', icon: '🗂️' },
+  { stat: 'Free', label: 'To Search', desc: 'No account, no paywall. Basic examiner stats are open to everyone.', icon: '🔓' },
+  { stat: 'AI', label: 'Summaries', desc: 'Plain-language prosecution strategy summaries powered by Claude AI.', icon: '✨' },
 ];
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0a1628' }}>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
 
-      {/* Nav */}
-      <header className="w-full border-b border-white/5 px-4 sm:px-6" style={{ backgroundColor: '#0a1628' }}>
+      {/* Nav — white, clean */}
+      <header className="w-full bg-white border-b border-gray-100 px-6 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto h-16 flex items-center justify-between">
-          <Image src="/logo.png" alt="PatentIQ" width={140} height={40} className="object-contain" />
-          <button className="text-sm font-medium text-gray-300 border border-white/10 rounded-lg px-4 py-1.5 hover:bg-white/5 transition-colors">
+          <Image src="/logo.png" alt="PatentIQ" width={130} height={36} className="object-contain" />
+          <nav className="hidden sm:flex items-center gap-8 text-sm font-medium text-gray-500">
+            <a href="#how" className="hover:text-gray-900 transition-colors">How it works</a>
+            <a href="#why" className="hover:text-gray-900 transition-colors">Features</a>
+            <a href="#pricing" className="hover:text-gray-900 transition-colors">Pricing</a>
+          </nav>
+          <button className="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors rounded-xl px-5 py-2 shadow-sm">
             Sign In
           </button>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="w-full px-4 sm:px-6 pt-24 pb-20 sm:pt-32 sm:pb-28 flex flex-col items-center text-center"
-        style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.12) 0%, transparent 70%)' }}>
-        <span className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-5 px-3 py-1 rounded-full border border-blue-400/20 bg-blue-400/5">
+      <section className="w-full px-6 pt-28 pb-24 flex flex-col items-center text-center bg-white">
+        <span className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-6 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100">
           USPTO Examiner Intelligence
         </span>
-        <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight leading-tight max-w-3xl">
-          Make smarter patent<br className="hidden sm:block" />
-          <span className="text-blue-400"> prosecution decisions</span>
+        <h1 className="text-5xl sm:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1] max-w-3xl">
+          Make smarter patent<br />
+          <span className="text-blue-600">prosecution decisions</span>
         </h1>
-        <p className="mt-5 text-gray-400 text-base sm:text-lg max-w-lg leading-relaxed">
+        <p className="mt-6 text-gray-500 text-lg max-w-lg leading-relaxed">
           Search 18,110 USPTO patent examiners — see grant rates, rejection patterns, interview stats, and AI-powered strategy in seconds.
         </p>
 
-        <div className="w-full max-w-xl mt-10">
+        <div className="w-full max-w-lg mt-10">
           <ExaminerSearch />
         </div>
 
-        <div className="flex flex-wrap justify-center gap-2 mt-6">
+        <div className="flex flex-wrap justify-center gap-3 mt-6">
           {['18,110 Examiners', '14M+ Applications Analyzed', 'Free to Search'].map((label) => (
-            <span key={label} className="px-4 py-1.5 rounded-full border border-white/10 text-sm text-gray-400 font-medium bg-white/5">
+            <span key={label} className="px-4 py-1.5 rounded-full bg-slate-50 border border-gray-200 text-sm text-gray-500 font-medium">
               {label}
             </span>
           ))}
         </div>
-
-        {/* Example search hint */}
-        <p className="mt-4 text-xs text-gray-600">
-          Try searching: <span className="text-gray-400 cursor-pointer hover:text-blue-400 transition-colors">"John Smith"</span> or <span className="text-gray-400 cursor-pointer hover:text-blue-400 transition-colors">"Sarah Johnson"</span>
+        <p className="mt-4 text-xs text-gray-400">
+          Try: <span className="text-blue-500 cursor-pointer">"John Smith"</span> or <span className="text-blue-500 cursor-pointer">"Sarah Johnson"</span>
         </p>
       </section>
 
       {/* How it works */}
-      <section className="w-full px-4 sm:px-6 py-20 border-t border-white/5" style={{ backgroundColor: '#0d1f38' }}>
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-center text-2xl sm:text-3xl font-bold text-white mb-2">How it works</h2>
-          <p className="text-center text-gray-500 text-sm sm:text-base mb-14">Three steps from search to strategy.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
-            {steps.map((step) => (
-              <div key={step.n} className="flex flex-col items-center text-center gap-4">
-                <div className="w-11 h-11 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-bold flex items-center justify-center shrink-0">
-                  {step.n}
-                </div>
-                <h3 className="text-base font-semibold text-white">{step.title}</h3>
+      <section id="how" className="w-full px-6 py-24 bg-slate-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3">How it works</h2>
+            <p className="text-gray-500 text-base max-w-md mx-auto">Three steps from search to strategy.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {steps.map((step, i) => (
+              <div key={step.n} className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col gap-4 hover:shadow-md transition-shadow">
+                <span className="text-4xl font-black text-blue-100 leading-none">{step.n}</span>
+                <h3 className="text-lg font-bold text-slate-900">{step.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
               </div>
             ))}
@@ -200,17 +189,20 @@ export default function HomePage() {
       </section>
 
       {/* Why PatentIQ */}
-      <section className="w-full px-4 sm:px-6 py-20 border-t border-white/5" style={{ backgroundColor: '#0a1628' }}>
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-center text-2xl sm:text-3xl font-bold text-white mb-2">Why PatentIQ</h2>
-          <p className="text-center text-gray-500 text-sm sm:text-base mb-14">Built for practitioners who want an edge.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <section id="why" className="w-full px-6 py-24 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3">Why PatentIQ</h2>
+            <p className="text-gray-500 text-base max-w-md mx-auto">Built for practitioners who want an edge.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {features.map((f) => (
-              <div key={f.label} className="rounded-2xl border border-white/8 px-7 py-7 flex flex-col gap-4 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all" style={{ backgroundColor: '#0d1f38' }}>
+              <div key={f.label} className="rounded-3xl p-8 flex flex-col gap-4 bg-slate-50 border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                <span className="text-3xl">{f.icon}</span>
                 <div>
-                  <span className="text-3xl font-bold text-white">{f.stat}</span>
+                  <span className="text-3xl font-black text-slate-900">{f.stat}</span>
                   {' '}
-                  <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{f.label}</span>
+                  <span className="text-sm font-semibold text-gray-400 uppercase tracking-wide">{f.label}</span>
                 </div>
                 <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
               </div>
@@ -219,16 +211,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA strip */}
-      <section className="w-full px-4 sm:px-6 py-16 border-t border-white/5" style={{ backgroundColor: '#0d1f38' }}>
-        <div className="max-w-2xl mx-auto text-center flex flex-col items-center gap-5">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">Ready to prosecute smarter?</h2>
-          <p className="text-gray-500 text-sm sm:text-base">Search any USPTO examiner free — no account required.</p>
+      {/* CTA */}
+      <section id="pricing" className="w-full px-6 py-24 bg-slate-900">
+        <div className="max-w-2xl mx-auto text-center flex flex-col items-center gap-6">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">Ready to prosecute smarter?</h2>
+          <p className="text-gray-400 text-base">Search any USPTO examiner free — no account required.</p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <a href="#" className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-lg">
+            <a href="#" className="px-7 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-colors shadow-lg">
               Search Examiners →
             </a>
-            <a href="#" className="px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-gray-300 text-sm font-semibold transition-colors">
+            <a href="#" className="px-7 py-3 rounded-2xl border border-white/10 hover:bg-white/5 text-gray-300 text-sm font-semibold transition-colors">
               View Pricing
             </a>
           </div>
@@ -236,10 +228,10 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full border-t border-white/5 px-4 sm:px-6 py-8 mt-auto" style={{ backgroundColor: '#0a1628' }}>
+      <footer className="w-full border-t border-gray-100 px-6 py-8 bg-white">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <Image src="/logo.png" alt="PatentIQ" width={100} height={28} className="object-contain opacity-60" />
-          <p className="text-xs text-gray-600 text-center">
+          <p className="text-xs text-gray-400 text-center">
             Data sourced from USPTO PatEx dataset · Not legal advice · © {new Date().getFullYear()} PatentIQ
           </p>
         </div>
