@@ -3,6 +3,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Examiner } from '@/lib/types';
 
+const USPTO_AVG_PENDENCY = 24.5;
+const USPTO_AVG_GRANT_RATE = 67;
+
 function rateColor(rate: number) {
   if (rate >= 70) return { hex: '#16a34a', text: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200', banner: 'bg-green-500', label: 'Favorable' };
   if (rate >= 50) return { hex: '#d97706', text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', banner: 'bg-amber-500', label: 'Moderate' };
@@ -15,7 +18,7 @@ type StrategyProfile = {
   primaryAction: string;
   primaryActionDetail: string;
   primaryActionColor: string;
-  recommendations: { icon: string; text: string; impact: 'high' | 'medium' | 'low' }[];
+  recommendations: { icon: string; text: string; why: string; impact: 'high' | 'medium' | 'low' }[];
   allowanceLikelihood: 'High' | 'Moderate' | 'Low';
   allowanceLikelihoodColor: string;
   confidence: 'High' | 'Medium' | 'Low';
@@ -35,10 +38,10 @@ function buildStrategyProfile(examiner: Examiner): StrategyProfile {
     totalApps >= 100 ? 'High' : totalApps >= 30 ? 'Medium' : 'Low';
   const confidenceNote =
     confidence === 'High'
-      ? `Based on ${totalApps.toLocaleString()} applications — statistically reliable`
+      ? `Statistically reliable — based on ${totalApps.toLocaleString()} applications`
       : confidence === 'Medium'
-      ? `Based on ${totalApps.toLocaleString()} applications — moderate reliability`
-      : `Only ${totalApps.toLocaleString()} applications — interpret with caution`;
+      ? `Moderate reliability — based on ${totalApps.toLocaleString()} applications`
+      : `Low sample size — only ${totalApps.toLocaleString()} applications, interpret with caution`;
 
   let interviewImpact: string | null = null;
   let interviewImpactColor = 'text-slate-600';
@@ -46,11 +49,11 @@ function buildStrategyProfile(examiner: Examiner): StrategyProfile {
     const delta = interviewRate - rate;
     if (Math.abs(delta) >= 3) {
       interviewImpact = delta > 0
-        ? `+${delta.toFixed(1)}pp above baseline grant rate`
-        : `${delta.toFixed(1)}pp below baseline grant rate`;
+        ? `+${delta.toFixed(1)}pp above baseline`
+        : `${delta.toFixed(1)}pp below baseline`;
       interviewImpactColor = delta > 0 ? 'text-green-600' : 'text-red-600';
     } else {
-      interviewImpact = 'Minimal impact on grant rate (within ±3pp)';
+      interviewImpact = '~0pp impact';
       interviewImpactColor = 'text-slate-500';
     }
   }
@@ -78,55 +81,55 @@ function buildStrategyProfile(examiner: Examiner): StrategyProfile {
 
   if (rate >= 70) {
     primaryAction = 'File with confidence';
-    primaryActionDetail = 'This examiner has a strong grant rate. Standard prosecution with well-supported claims is your best path.';
+    primaryActionDetail = 'This examiner has a strong grant rate — well above the USPTO average. Standard prosecution with well-supported, broad claims is your best path. Expect a smoother-than-average prosecution cycle.';
     primaryActionColor = 'text-green-700 bg-green-50 border-green-300';
   } else if (rate >= 55 && interviewHighlyEffective) {
-    primaryAction = 'Request examiner interview';
-    primaryActionDetail = `Interviews move the needle significantly here (+${((interviewRate ?? 0) - rate).toFixed(1)}pp). Schedule one early — before the first office action if possible.`;
+    primaryAction = 'Request examiner interview early';
+    primaryActionDetail = `Interviews move the needle significantly here (+${((interviewRate ?? 0) - rate).toFixed(1)}pp above baseline). Schedule one before or immediately after the first office action to align on claim scope directly with the examiner.`;
     primaryActionColor = 'text-blue-700 bg-blue-50 border-blue-300';
   } else if (rate >= 55) {
     primaryAction = 'Prepare for amendment rounds';
-    primaryActionDetail = 'Anticipate 1-2 office actions. File broad independent claims and have dependent claims ready as fallback positions.';
+    primaryActionDetail = 'This examiner is moderately selective. Anticipate 1-2 rounds of office actions before allowance. File broad independent claims now, and have dependent claims ready as fallback positions for amendment rounds.';
     primaryActionColor = 'text-amber-700 bg-amber-50 border-amber-300';
   } else if (rate < 55 && interviewHighlyEffective) {
     primaryAction = 'Request examiner interview immediately';
-    primaryActionDetail = `Low grant rate but interviews are highly effective (+${((interviewRate ?? 0) - rate).toFixed(1)}pp). This is your best tool with this examiner.`;
+    primaryActionDetail = `Low grant rate, but interviews are highly effective here (+${((interviewRate ?? 0) - rate).toFixed(1)}pp above baseline). This is your highest-leverage tool with this examiner — use it early in prosecution.`;
     primaryActionColor = 'text-blue-700 bg-blue-50 border-blue-300';
   } else if (rate < 55 && interviewIneffective) {
     primaryAction = 'File narrow — plan for continuation';
-    primaryActionDetail = 'Low grant rate and interviews are not effective here. File targeted claims and preserve continuation rights for future prosecution.';
+    primaryActionDetail = 'Low grant rate and interviews are not effective here. File targeted, specific claims, invest in written arguments over interviews, and preserve continuation rights to keep future prosecution options open.';
     primaryActionColor = 'text-red-700 bg-red-50 border-red-300';
   } else {
     primaryAction = 'File narrow, targeted claims';
-    primaryActionDetail = 'This examiner is selective. Use specific, well-defined claim language and be ready for multiple rejection rounds.';
+    primaryActionDetail = 'This examiner is selective. Use specific, well-defined claim language from the start and be ready for multiple rejection rounds. Broad claims are unlikely to survive initial examination.';
     primaryActionColor = 'text-amber-700 bg-amber-50 border-amber-300';
   }
 
   const recommendations: StrategyProfile['recommendations'] = [];
   if (rate >= 70) {
-    recommendations.push({ icon: '✅', text: 'Broad independent claims are viable with this examiner', impact: 'high' });
-    recommendations.push({ icon: '📋', text: 'Thorough prior art search will maintain allowance momentum', impact: 'medium' });
-    recommendations.push({ icon: '🔄', text: 'Consider continuation after allowance to broaden coverage', impact: 'medium' });
-    if (pendency && pendency < 20) recommendations.push({ icon: '⚡', text: `Fast pendency (${pendency.toFixed(1)} mo) — expect quicker prosecution cycle`, impact: 'high' });
+    recommendations.push({ icon: '✅', text: 'Broad independent claims are viable', why: 'Grant rate above 70% means this examiner allows a high proportion of claims as-filed.', impact: 'high' });
+    recommendations.push({ icon: '📋', text: 'Run a thorough prior art search', why: 'Strong prior art work builds examiner confidence and reduces back-and-forth.', impact: 'medium' });
+    recommendations.push({ icon: '🔄', text: 'Consider a continuation after allowance', why: 'Favorable examiners make continuation strategies more predictable and cost-effective.', impact: 'medium' });
+    if (pendency && pendency < 20) recommendations.push({ icon: '⚡', text: `Expect fast prosecution (~${pendency.toFixed(0)} months avg)`, why: 'Shorter pendency means lower prosecution cost and faster time-to-patent.', impact: 'high' });
   } else if (rate >= 50) {
-    recommendations.push({ icon: '📝', text: 'File independent claims with clear, specific limitations', impact: 'high' });
-    recommendations.push({ icon: '🛡️', text: 'Include strong dependent claims as fallback positions', impact: 'high' });
+    recommendations.push({ icon: '📝', text: 'File claims with specific, clear limitations', why: 'Moderate examiners respond better to precise claim language than broad assertions.', impact: 'high' });
+    recommendations.push({ icon: '🛡️', text: 'Draft strong dependent claims as fallbacks', why: 'Having narrow backup positions reduces the cost of amendment rounds.', impact: 'high' });
     if (interviewHighlyEffective) {
-      recommendations.push({ icon: '🤝', text: 'Schedule an interview — highly effective with this examiner', impact: 'high' });
+      recommendations.push({ icon: '🤝', text: 'Schedule an interview — it significantly helps', why: `Interview allowance rate is ${((interviewRate ?? 0) - rate).toFixed(1)}pp above baseline with this examiner.`, impact: 'high' });
     } else {
-      recommendations.push({ icon: '📞', text: 'Consider an interview after first office action to align on scope', impact: 'medium' });
+      recommendations.push({ icon: '📞', text: 'Consider an interview after first OA', why: 'Direct dialogue can narrow disputes before they require formal responses.', impact: 'medium' });
     }
-    recommendations.push({ icon: '⏱️', text: `Avg pendency ${pendency ? pendency.toFixed(1) + ' months' : 'unknown'} — budget prosecution timeline accordingly`, impact: 'low' });
+    recommendations.push({ icon: '⏱️', text: `Budget for ~${pendency ? pendency.toFixed(0) : '?'} months of prosecution`, why: `${pendency && pendency > USPTO_AVG_PENDENCY ? `Longer than the ${USPTO_AVG_PENDENCY}mo USPTO average — plan timelines accordingly.` : `On par with the ${USPTO_AVG_PENDENCY}mo USPTO average.`}`, impact: 'low' });
   } else {
-    recommendations.push({ icon: '🎯', text: 'Use narrow, highly specific claim language from the start', impact: 'high' });
+    recommendations.push({ icon: '🎯', text: 'Use narrow, highly specific claim language', why: 'Low grant rate examiners reject broad claims at a high rate — specificity is your best defense.', impact: 'high' });
     if (interviewHighlyEffective) {
-      recommendations.push({ icon: '🤝', text: 'Examiner interviews are your most effective tool — use early', impact: 'high' });
+      recommendations.push({ icon: '🤝', text: 'Use examiner interviews early and often', why: `Interview allowance rate is ${((interviewRate ?? 0) - rate).toFixed(1)}pp above baseline — your most effective lever.`, impact: 'high' });
     } else if (interviewIneffective) {
-      recommendations.push({ icon: '⚠️', text: 'Interviews have low success rate here — invest in written arguments instead', impact: 'high' });
+      recommendations.push({ icon: '⚠️', text: 'Avoid relying on interviews alone', why: 'Interview allowance rate is below 25% — invest in strong written arguments instead.', impact: 'high' });
     }
-    recommendations.push({ icon: '🔄', text: 'Preserve continuation rights — plan for multi-round prosecution', impact: 'high' });
-    recommendations.push({ icon: '📑', text: 'Prepare robust technical arguments supported by specification', impact: 'medium' });
-    if (pendency && pendency > 35) recommendations.push({ icon: '⏳', text: `Long pendency (${pendency.toFixed(1)} mo) — file early to preserve priority dates`, impact: 'medium' });
+    recommendations.push({ icon: '🔄', text: 'File a continuation to preserve options', why: 'Low grant rate examiners often force abandonment — a continuation keeps prosecution alive.', impact: 'high' });
+    recommendations.push({ icon: '📑', text: 'Build robust technical arguments from specification', why: 'Detailed spec support gives you ammunition to distinguish prior art in written responses.', impact: 'medium' });
+    if (pendency && pendency > 35) recommendations.push({ icon: '⏳', text: `File early — expect ~${pendency.toFixed(0)} months to resolution`, why: `Well above the ${USPTO_AVG_PENDENCY}mo USPTO average. Late filing means late protection.`, impact: 'medium' });
   }
 
   return { primaryAction, primaryActionDetail, primaryActionColor, recommendations, allowanceLikelihood, allowanceLikelihoodColor, confidence, confidenceNote, interviewImpact, interviewImpactColor, examinerPersonality };
@@ -141,7 +144,6 @@ function StrategyPanel({ examiner }: { examiner: Examiner }) {
 
   return (
     <div className="space-y-5">
-      {/* Examiner personality */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-base">🧠</span>
@@ -150,72 +152,76 @@ function StrategyPanel({ examiner }: { examiner: Examiner }) {
         <p className="text-sm text-slate-700 leading-relaxed font-medium">{profile.examinerPersonality}</p>
       </div>
 
-      {/* Primary action */}
       <div className={`rounded-2xl border-2 p-5 ${profile.primaryActionColor}`}>
-        <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Recommended Next Step</p>
-        <h3 className="text-base font-extrabold mb-1.5">{profile.primaryAction}</h3>
+        <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Recommended Next Step</p>
+        <h3 className="text-base font-extrabold mb-2">{profile.primaryAction}</h3>
         <p className="text-sm leading-relaxed opacity-90">{profile.primaryActionDetail}</p>
       </div>
 
-      {/* Metrics row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-1 items-center text-center">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Allowance</p>
           <span className={`text-sm font-extrabold px-2.5 py-1 rounded-full border mt-1 ${profile.allowanceLikelihoodColor}`}>{profile.allowanceLikelihood}</span>
+          <p className="text-xs text-slate-400 mt-1">likelihood</p>
         </div>
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-1 items-center text-center">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Confidence</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Data</p>
           <span className={`text-sm font-extrabold px-2.5 py-1 rounded-full border mt-1 ${profile.confidence === 'High' ? 'text-green-600 bg-green-50 border-green-200' : profile.confidence === 'Medium' ? 'text-amber-600 bg-amber-50 border-amber-200' : 'text-red-600 bg-red-50 border-red-200'}`}>{profile.confidence}</span>
+          <p className="text-xs text-slate-400 mt-1">confidence</p>
         </div>
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-1 items-center text-center">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Interview Δ</p>
           <span className={`text-sm font-extrabold mt-1 ${profile.interviewImpactColor}`}>
-            {profile.interviewImpact ? (profile.interviewImpact.startsWith('+') || profile.interviewImpact.startsWith('-') ? profile.interviewImpact.split(' ')[0] : '~0pp') : 'No data'}
+            {profile.interviewImpact ?? 'No data'}
           </span>
+          <p className="text-xs text-slate-400 mt-1">vs baseline</p>
         </div>
       </div>
 
-      <p className="text-xs text-slate-400 flex items-center gap-1.5">
-        <span className={`w-1.5 h-1.5 rounded-full inline-block ${profile.confidence === 'High' ? 'bg-green-400' : profile.confidence === 'Medium' ? 'bg-amber-400' : 'bg-red-400'}`} />
+      <p className="text-xs text-slate-400 flex items-center gap-1.5 -mt-1">
+        <span className={`w-1.5 h-1.5 rounded-full inline-block shrink-0 ${profile.confidence === 'High' ? 'bg-green-400' : profile.confidence === 'Medium' ? 'bg-amber-400' : 'bg-red-400'}`} />
         {profile.confidenceNote}
       </p>
 
-      {/* Action checklist */}
       <div>
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Action Checklist</h3>
         <div className="space-y-2">
           {profile.recommendations.map((rec, i) => (
-            <div key={i} className="flex items-start gap-3 bg-white rounded-xl border border-slate-100 shadow-sm px-4 py-3 hover:shadow-md transition-shadow">
-              <span className="text-base shrink-0 mt-0.5">{rec.icon}</span>
-              <p className="text-sm text-slate-700 leading-relaxed flex-1">{rec.text}</p>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 self-start mt-0.5 ${impactBadge(rec.impact)}`}>{rec.impact}</span>
+            <div key={i} className="bg-white rounded-xl border border-slate-100 shadow-sm px-4 py-3.5 hover:shadow-md transition-shadow">
+              <div className="flex items-start gap-3 mb-1.5">
+                <span className="text-base shrink-0 mt-0.5">{rec.icon}</span>
+                <p className="text-sm font-semibold text-slate-800 flex-1 leading-snug">{rec.text}</p>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 self-start ${impactBadge(rec.impact)}`}>{rec.impact}</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed ml-8">{rec.why}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Interview impact detail */}
-      {profile.interviewImpact && examiner.interview_allowance_rate != null && (
+      {profile.interviewImpact && examiner.interview_allowance_rate != null && Math.abs((examiner.interview_allowance_rate) - (examiner.grant_rate_3yr ?? 0)) >= 3 && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-base">🤝</span>
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Interview Impact Analysis</h3>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col items-center gap-0.5 text-center flex-1">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="flex flex-col items-center gap-0.5 text-center flex-1 bg-slate-50 rounded-xl p-3">
               <p className="text-2xl font-extrabold text-slate-900">{(examiner.grant_rate_3yr ?? 0).toFixed(1)}%</p>
               <p className="text-xs text-slate-400">Baseline grant rate</p>
+              <p className="text-xs text-slate-500 mt-0.5">Without interview</p>
             </div>
-            <div className="flex flex-col items-center gap-1">
-              <span className={`text-lg font-black ${profile.interviewImpactColor}`}>→</span>
-              <span className={`text-xs font-bold ${profile.interviewImpactColor}`}>{profile.interviewImpact.split(' ')[0]}</span>
+            <div className="flex flex-col items-center gap-1 shrink-0">
+              <span className={`text-xl font-black ${profile.interviewImpactColor}`}>→</span>
+              <span className={`text-xs font-bold ${profile.interviewImpactColor}`}>{profile.interviewImpact}</span>
             </div>
-            <div className="flex flex-col items-center gap-0.5 text-center flex-1">
+            <div className="flex flex-col items-center gap-0.5 text-center flex-1 bg-slate-50 rounded-xl p-3">
               <p className="text-2xl font-extrabold text-slate-900">{examiner.interview_allowance_rate.toFixed(1)}%</p>
-              <p className="text-xs text-slate-400">After interview</p>
+              <p className="text-xs text-slate-400">Interview allowance</p>
+              <p className="text-xs text-slate-500 mt-0.5">Cases with interview</p>
             </div>
           </div>
-          <p className="text-xs text-slate-400 text-center mt-3">Based on {examiner.interview_count?.toLocaleString() ?? '—'} recorded interviews</p>
+          <p className="text-xs text-slate-400 text-center">Based on {examiner.interview_count?.toLocaleString() ?? '—'} recorded interviews with this examiner</p>
         </div>
       )}
     </div>
@@ -224,7 +230,7 @@ function StrategyPanel({ examiner }: { examiner: Examiner }) {
 
 // ─── Page components ──────────────────────────────────────────────────────────
 
-function GrantGauge({ rate }: { rate: number }) {
+function GrantGauge({ rate, totalApps }: { rate: number; totalApps?: number }) {
   const size = 160;
   const sw = 12;
   const r = (size - sw) / 2;
@@ -233,8 +239,9 @@ function GrantGauge({ rate }: { rate: number }) {
   const clamped = Math.min(100, Math.max(0, rate));
   const fill = (clamped / 100) * circ;
   const { hex, label } = rateColor(rate);
+  const approxGranted = totalApps ? Math.round((rate / 100) * totalApps) : null;
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1.5">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <circle cx={cx} cy={cx} r={r} fill="none" stroke="#f1f5f9" strokeWidth={sw} />
         <circle cx={cx} cy={cx} r={r} fill="none" stroke={hex} strokeWidth={sw} strokeLinecap="round"
@@ -242,19 +249,30 @@ function GrantGauge({ rate }: { rate: number }) {
         <text x={cx} y={cx - 8} textAnchor="middle" dominantBaseline="middle" fontSize="28" fontWeight="800" fill={hex}>{clamped.toFixed(0)}%</text>
         <text x={cx} y={cx + 14} textAnchor="middle" dominantBaseline="middle" fontSize="10" fill="#94a3b8">{label}</text>
       </svg>
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Grant Rate</p>
+      <div className="text-center">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Grant Rate (3yr)</p>
+        {approxGranted && (
+          <p className="text-xs text-slate-400 mt-0.5">~{approxGranted.toLocaleString()} of {totalApps?.toLocaleString()} granted</p>
+        )}
+      </div>
     </div>
   );
 }
 
 function USPTOBar({ rate }: { rate: number }) {
-  const AVG = 67;
+  const AVG = USPTO_AVG_GRANT_RATE;
   const clamped = Math.min(100, Math.max(0, rate));
   const { hex } = rateColor(rate);
+  const diff = (rate - AVG).toFixed(1);
+  const diffText = rate >= AVG
+    ? `${diff}pp above USPTO average — easier than most examiners`
+    : `${Math.abs(parseFloat(diff))}pp below USPTO average — stricter than most`;
   return (
     <div className="w-full">
       <div className="flex justify-between text-xs text-slate-400 font-medium mb-1.5">
-        <span>0%</span><span className="font-semibold text-slate-500">vs. USPTO avg ({AVG}%)</span><span>100%</span>
+        <span>0%</span>
+        <span className="font-semibold text-slate-500">vs. USPTO avg ({AVG}%)</span>
+        <span>100%</span>
       </div>
       <div className="relative h-2 bg-slate-100 rounded-full">
         <div className="absolute top-0 h-full rounded-full" style={{ width: `${clamped}%`, backgroundColor: hex, opacity: 0.85 }} />
@@ -262,8 +280,9 @@ function USPTOBar({ rate }: { rate: number }) {
       </div>
       <div className="flex justify-between text-xs mt-1.5">
         <span style={{ color: hex }} className="font-bold">{clamped.toFixed(1)}% this examiner</span>
-        <span className="text-slate-400">{AVG}% USPTO avg</span>
+        <span className="text-slate-400">{AVG}% avg</span>
       </div>
+      <p className="text-xs text-slate-400 mt-1.5 italic">{diffText}</p>
     </div>
   );
 }
@@ -292,18 +311,35 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
     ? new Date(examiner.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
 
+  const pendencyDiff = examiner.pendency_months != null
+    ? (examiner.pendency_months - USPTO_AVG_PENDENCY).toFixed(1)
+    : null;
+  const pendencyContext = pendencyDiff != null
+    ? parseFloat(pendencyDiff) > 3
+      ? `${pendencyDiff}mo longer than USPTO avg`
+      : parseFloat(pendencyDiff) < -3
+      ? `${Math.abs(parseFloat(pendencyDiff))}mo faster than USPTO avg`
+      : 'Near USPTO average'
+    : null;
+
   const trendEntries = examiner.grant_rate_by_year
     ? Object.entries(examiner.grant_rate_by_year).map(([y, r]) => ({ y, r: r as number })).sort((a, b) => +a.y - +b.y)
     : [];
   const showTrend = trendEntries.length >= 3;
   let trendLabel = '';
   let trendStyle = '';
+  let trendExplainer = '';
   if (showTrend) {
     const fa = (trendEntries[0].r + trendEntries[1].r) / 2;
     const la = (trendEntries[trendEntries.length - 2].r + trendEntries[trendEntries.length - 1].r) / 2;
     const delta = la - fa;
     trendLabel = delta > 2 ? `↑ Trending up +${delta.toFixed(1)}pp` : delta < -2 ? `↓ Trending down ${delta.toFixed(1)}pp` : '→ Relatively stable';
     trendStyle = delta > 2 ? 'text-green-600 bg-green-50 border-green-200' : delta < -2 ? 'text-red-600 bg-red-50 border-red-200' : 'text-slate-500 bg-slate-50 border-slate-200';
+    trendExplainer = delta > 2
+      ? `This examiner has become more lenient over time — recent applications have a higher chance of allowance than historical averages suggest.`
+      : delta < -2
+      ? `This examiner has become stricter over time — recent grant rates are lower than their historical average. Plan accordingly.`
+      : `Grant rate has been consistent over the analysis period — historical rates are a reliable predictor of future behavior.`;
   }
 
   return (
@@ -326,7 +362,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
 
       <div className="max-w-5xl mx-auto px-6 pt-24 pb-16">
 
-        {/* Hero — open layout */}
+        {/* Hero */}
         <div className="pt-8 pb-10 mb-8 border-b border-slate-100">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-8">
             <div>
@@ -336,26 +372,33 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
               </div>
               <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">{examiner.name}</h1>
             </div>
-            {formattedDate && <p className="text-xs text-slate-400 shrink-0">Updated {formattedDate}</p>}
+            {formattedDate && <p className="text-xs text-slate-400 shrink-0">Data updated {formattedDate}</p>}
           </div>
 
           <div className="flex flex-col sm:flex-row items-start gap-10">
             {examiner.grant_rate_3yr != null && (
-              <div className="shrink-0"><GrantGauge rate={examiner.grant_rate_3yr} /></div>
+              <div className="shrink-0">
+                <GrantGauge rate={examiner.grant_rate_3yr} totalApps={examiner.total_applications ?? undefined} />
+              </div>
             )}
             <div className="flex-1 flex flex-col gap-5 pt-2 w-full">
               {examiner.grant_rate_3yr != null && <USPTOBar rate={examiner.grant_rate_3yr} />}
               <div className="grid grid-cols-3 gap-4">
-                {[
-                  { label: 'Applications', value: examiner.total_applications?.toLocaleString() },
-                  { label: 'Avg Pendency', value: examiner.pendency_months != null ? `${examiner.pendency_months.toFixed(1)} mo` : undefined },
-                  { label: 'Art Unit', value: examiner.art_unit_number },
-                ].map((s) => (
-                  <div key={s.label} className="flex flex-col gap-0.5">
-                    <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">{s.label}</p>
-                    <p className="text-xl font-extrabold text-slate-900">{s.value ?? '—'}</p>
-                  </div>
-                ))}
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">Applications</p>
+                  <p className="text-xl font-extrabold text-slate-900">{examiner.total_applications?.toLocaleString() ?? '—'}</p>
+                  <p className="text-xs text-slate-400">total analyzed</p>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">Avg Pendency</p>
+                  <p className="text-xl font-extrabold text-slate-900">{examiner.pendency_months != null ? `${examiner.pendency_months.toFixed(1)} mo` : '—'}</p>
+                  {pendencyContext && <p className="text-xs text-slate-400">{pendencyContext}</p>}
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">Art Unit</p>
+                  <p className="text-xl font-extrabold text-slate-900">{examiner.art_unit_number ?? '—'}</p>
+                  <p className="text-xs text-slate-400">technology group</p>
+                </div>
               </div>
             </div>
           </div>
@@ -364,10 +407,9 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
         {/* Dashboard grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* LEFT — 2 cols: Strategy Panel replaces old strategy section */}
+          {/* LEFT */}
           <div className="lg:col-span-2 space-y-8">
 
-            {/* Strategy Panel — NEW */}
             <div>
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5">Prosecution Strategy</h2>
               <StrategyPanel examiner={examiner} />
@@ -379,11 +421,17 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
               const max = Math.max(codes.non_final, codes.final, 1);
               const nfPct = codes.total > 0 ? ((codes.non_final / codes.total) * 100).toFixed(0) : '0';
               const fPct = codes.total > 0 ? ((codes.final / codes.total) * 100).toFixed(0) : '0';
+              const finalRatio = codes.total > 0 ? (codes.final / codes.total) * 100 : 0;
+              const rejectionContext = finalRatio > 40
+                ? 'High final rejection rate — this examiner frequently escalates to finals. Expect a tight prosecution window and prepare strong first responses.'
+                : finalRatio > 25
+                ? 'Moderate final rejection rate — some applications escalate to finals, but most can be resolved through amendment.'
+                : 'Low final rejection rate — most rejections are non-final, giving you more opportunities to amend and respond.';
               return (
                 <div>
                   <div className="flex items-center justify-between mb-5">
                     <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Rejection Activity</h2>
-                    <span className="text-sm font-bold text-slate-900">{codes.total.toLocaleString()} <span className="text-slate-400 font-normal text-xs">total rejections</span></span>
+                    <span className="text-sm font-bold text-slate-900">{codes.total.toLocaleString()} <span className="text-slate-400 font-normal text-xs">total rejections on record</span></span>
                   </div>
                   <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
                     <div>
@@ -396,6 +444,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
                           {(codes.non_final / max) > 0.2 && <span className="text-xs font-bold text-white">{nfPct}%</span>}
                         </div>
                       </div>
+                      <p className="text-xs text-slate-400 mt-1">Non-final rejections allow you to amend claims and respond without losing the application.</p>
                     </div>
                     <div>
                       <div className="flex justify-between text-sm mb-2">
@@ -407,6 +456,10 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
                           {(codes.final / max) > 0.2 && <span className="text-xs font-bold text-white">{fPct}%</span>}
                         </div>
                       </div>
+                      <p className="text-xs text-slate-400 mt-1">Final rejections limit your response options and often require an RCE or appeal to continue prosecution.</p>
+                    </div>
+                    <div className="pt-3 border-t border-slate-100">
+                      <p className="text-xs text-slate-600 leading-relaxed italic">{rejectionContext}</p>
                     </div>
                   </div>
                 </div>
@@ -447,6 +500,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
                         </g>
                       ))}
                     </svg>
+                    <p className="text-xs text-slate-500 leading-relaxed mt-3 italic">{trendExplainer}</p>
                   </div>
                 </div>
               );
@@ -465,14 +519,20 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
               const color = rate2 >= 50 ? '#16a34a' : rate2 >= 25 ? '#d97706' : '#dc2626';
               const note = rate2 > 50 ? 'Interviews are highly effective' : rate2 >= 25 ? 'Interviews sometimes help' : 'Interviews rarely lead to allowance';
               const noteStyle = rate2 > 50 ? 'text-green-700 bg-green-50 border-green-200' : rate2 >= 25 ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-red-700 bg-red-50 border-red-200';
+              const interviewExplainer = rate2 > 50
+                ? 'More than half of interviews with this examiner result in allowance — a strong signal to request one early.'
+                : rate2 >= 25
+                ? 'Interviews have a moderate success rate here. Worth requesting, but not a guaranteed path to allowance.'
+                : 'Interviews rarely lead to allowance with this examiner. Focus resources on written arguments instead.';
               return (
                 <div>
                   <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Examiner Interviews</h2>
                   <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    <div className="flex items-center gap-5 mb-4">
+                    <div className="flex items-center gap-5 mb-3">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-4xl font-black text-slate-900">{count.toLocaleString()}</span>
                         <span className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Total Interviews</span>
+                        <span className="text-xs text-slate-400">on record</span>
                       </div>
                       <div className="w-px self-stretch bg-slate-100" />
                       <div className="flex flex-col items-center gap-1">
@@ -486,11 +546,35 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
                         <p className="text-xs text-slate-400 text-center leading-tight">Interview<br />→ Allowance</p>
                       </div>
                     </div>
-                    <div className={`rounded-xl border px-3 py-2 text-xs font-semibold ${noteStyle}`}>{note}</div>
+                    <div className={`rounded-xl border px-3 py-2 text-xs font-semibold mb-2 ${noteStyle}`}>{note}</div>
+                    <p className="text-xs text-slate-400 leading-relaxed">{interviewExplainer}</p>
                   </div>
                 </div>
               );
             })()}
+
+            {/* Speed to Allowance */}
+            {examiner.pendency_months != null && (
+              <div>
+                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Speed to Allowance</h2>
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                  <div className="flex items-end gap-2 mb-1">
+                    <p className="text-3xl font-black text-slate-900">{examiner.pendency_months.toFixed(1)}</p>
+                    <p className="text-sm text-slate-400 mb-1">months avg</p>
+                  </div>
+                  <div className="relative h-1.5 bg-slate-100 rounded-full mb-2 mt-3">
+                    <div className="absolute top-0 h-full rounded-full bg-blue-400" style={{ width: `${Math.min(100, (examiner.pendency_months / 60) * 100)}%` }} />
+                    <div className="absolute top-1/2 -translate-y-1/2 w-0.5 h-3 bg-slate-400 rounded-full" style={{ left: `${(USPTO_AVG_PENDENCY / 60) * 100}%` }} />
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-400 mb-3">
+                    <span>0 mo</span>
+                    <span>{USPTO_AVG_PENDENCY}mo avg</span>
+                    <span>60 mo</span>
+                  </div>
+                  {pendencyContext && <p className="text-xs text-slate-500 leading-relaxed italic">{pendencyContext} ({USPTO_AVG_PENDENCY}mo USPTO average)</p>}
+                </div>
+              </div>
+            )}
 
             {/* Data quality */}
             <div>
@@ -502,7 +586,9 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
                   { dot: 'bg-blue-400', text: '3-year rolling grant rate' },
                   ...(examiner.total_applications && examiner.total_applications > 100
                     ? [{ dot: 'bg-green-400', text: `High confidence (${examiner.total_applications.toLocaleString()} apps)` }]
-                    : []),
+                    : examiner.total_applications && examiner.total_applications > 30
+                    ? [{ dot: 'bg-amber-400', text: `Moderate confidence (${examiner.total_applications.toLocaleString()} apps)` }]
+                    : [{ dot: 'bg-red-400', text: `Low sample size — use with caution` }]),
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm text-slate-600">
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.dot}`} />
@@ -520,6 +606,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
                   <div className="mb-4">
                     <p className="text-xs text-slate-400 mb-0.5">Art Unit</p>
                     <p className="text-3xl font-black text-slate-900">{examiner.art_unit_number}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Technology group identifier</p>
                   </div>
                 )}
                 <div className="rounded-xl bg-blue-50 border border-blue-100 p-4 flex flex-col gap-2.5">
@@ -527,7 +614,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
                     <span className="text-xs font-bold text-blue-600 bg-blue-100 rounded-full px-2 py-0.5">Pro</span>
                     <p className="text-xs font-semibold text-slate-700">Peer benchmarking</p>
                   </div>
-                  <p className="text-xs text-slate-500 leading-relaxed">Compare this examiner to others in Art Unit {examiner.art_unit_number ?? 'their group'}.</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">See how this examiner ranks among peers in Art Unit {examiner.art_unit_number ?? 'their group'} — grant rate percentile, pendency ranking, and more.</p>
                   <button className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all rounded-xl py-2">Upgrade to Pro</button>
                 </div>
               </div>
@@ -539,7 +626,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
                 <span className="text-base">✨</span>
                 <h3 className="text-xs font-bold uppercase tracking-widest opacity-75">AI Summary</h3>
               </div>
-              <p className="text-sm opacity-85 leading-relaxed mb-3">Get a plain-language strategy brief for {examiner.name} powered by Claude AI.</p>
+              <p className="text-sm opacity-85 leading-relaxed mb-3">Get a plain-language strategy brief for {examiner.name} — generated by Claude AI based on their full prosecution history.</p>
               <button className="w-full text-xs font-bold bg-white text-blue-600 hover:bg-blue-50 active:scale-95 transition-all rounded-xl py-2.5">Unlock AI Summary (Pro)</button>
             </div>
           </div>
