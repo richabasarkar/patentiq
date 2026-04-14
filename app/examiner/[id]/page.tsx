@@ -333,7 +333,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
             {/* Art Unit — minimal */}
             <div>
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Art Unit Context</h2>
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
                 {examiner.art_unit_number && (
                   <div className="mb-4">
                     <p className="text-xs text-slate-400 mb-0.5">Art Unit</p>
@@ -352,7 +352,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* AI teaser */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 text-white">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-4 text-white">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-base">✨</span>
                 <h3 className="text-xs font-bold uppercase tracking-widest opacity-75">AI Summary</h3>
