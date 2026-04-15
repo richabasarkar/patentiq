@@ -13,8 +13,12 @@ export interface Examiner {
   rejection_codes?: {
     non_final: number;
     final: number;
-    total: number;
-  };
+    total: number; };
+  allowance_after_1_oa?: number;
+  allowance_after_2_oa?: number;
+  abandonment_rate?: number;
+  rce_rate?: number;
+  avg_oas_to_allowance?: number;
   interview_count?: number;
   interview_allowance_rate?: number;
   grant_rate_by_year?: Record<string, number>;
