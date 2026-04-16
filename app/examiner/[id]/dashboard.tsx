@@ -82,7 +82,7 @@ function buildStrategy(examiner: Examiner) {
   if (examiner.appeal_overturn_rate != null && examiner.appeal_overturn_rate >= 30) prefs.push({ title: `PTAB frequently overturns this examiner (${examiner.appeal_overturn_rate.toFixed(0)}% overturn rate)`, detail: 'PTAB reverses this examiner at an above-average rate. If you receive a final rejection you believe is legally flawed, appeal is a stronger-than-average strategic option. Document your appeal arguments from the first OA response.', impact: 'high' });
   if (interviewHighlyEffective) prefs.push({ title: `Interviews significantly improve outcomes (+${((ir ?? 0) - rate).toFixed(1)}pp allowance rate)`, detail: 'Direct examiner interviews are highly effective with this examiner. Request an interview after the first OA before filing a formal response. Use it to narrow the scope of disagreement and propose claim amendments collaboratively. This often saves multiple OA rounds.', impact: 'high' });
   else if (interviewIneffective) prefs.push({ title: 'Interviews rarely lead to allowance with this examiner', detail: 'Interviews have a below-average success rate here. Invest your time in thorough written responses with strong technical and legal arguments rather than relying on interviews.', impact: 'high' });
-  if ((examiner.rce_rate ?? 0) >= 20) prefs.push({ title: `High RCE rate — ${(examiner.rce_rate ?? 0).toFixed(0)}% of applications require continued examination`, detail: 'An RCE (Request for Continued Examination) is filed when prosecution hits a dead end after a Final Rejection and the applicant wants to continue without abandoning. This examiner\'s high RCE rate means additional prosecution fees are likely — budget $1,200–$2,000 for USPTO RCE fees plus attorney time. Discuss this risk with your client upfront.', impact: 'medium' });
+  if ((examiner.rce_rate ?? 0) >= 20) prefs.push({ title: `High RCE rate — ${(examiner.rce_rate ?? 0).toFixed(0)}% of applications require continued examination`, detail: 'An RCE (Request for Continued Examination) is filed when a Final Rejection is issued and the applicant wants to continue prosecution rather than abandon or appeal. Filing an RCE reopens examination for another round but requires paying a USPTO fee (~$1,200–$2,000) plus additional attorney time. This examiner\'s high RCE rate means those extra costs are likely — discuss this risk with your client upfront.', impact: 'medium' });
   if (prefs.length === 0) prefs.push({ title: 'Standard prosecution approach is effective', detail: 'This examiner does not show strong skews toward particular rejection types. Use standard prosecution strategy: clear claim language, solid specification support, and thorough prior art search.', impact: 'low' });
 
   return { personality, primaryAction, primaryDetail, primaryColor, prefs, confidence, confidenceNote, interviewImpact, interviewImpactColor };
@@ -138,7 +138,6 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
 
   return (
     <div>
-      {/* Tab bar */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-6 overflow-x-auto">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -151,7 +150,6 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
       {/* ── STRATEGY ─────────────────────────────────────────────────────── */}
       {activeTab === 'strategy' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* LEFT */}
           <div className="space-y-4">
             {examiner.interview_count != null && examiner.interview_allowance_rate != null && (() => {
               const count = examiner.interview_count!;
@@ -212,7 +210,6 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
             </p>
           </div>
 
-          {/* RIGHT */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
             <CardLabel>Examiner Tendencies & Preferences</CardLabel>
             <p className="text-xs text-slate-400 mb-4 leading-relaxed">
@@ -246,7 +243,6 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                     { label: 'Application Filed', pct: 100, color: '#3b82f6' },
                     ...(examiner.allowance_after_1_oa != null ? [{ label: `Allowed after 1st OA response — ${examiner.allowance_after_1_oa.toFixed(0)}%`, pct: examiner.allowance_after_1_oa, color: '#16a34a' }] : []),
                     ...(examiner.allowance_after_2_oa != null ? [{ label: `Allowed after 2nd OA response — ${examiner.allowance_after_2_oa.toFixed(0)}% cumulative`, pct: examiner.allowance_after_2_oa, color: '#15803d' }] : []),
-                    ...(examiner.abandonment_rate != null ? [{ label: `Allowed — ${(100 - examiner.abandonment_rate).toFixed(0)}% (all rounds)`, pct: 100 - examiner.abandonment_rate, color: colors.hex }] : []),
                   ].map((stage, i) => (
                     <div key={i}>
                       <div className="flex justify-between text-xs mb-1.5">
@@ -306,6 +302,33 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
           </div>
 
           <div className="space-y-4">
+            {/* RCE Rate explanation card */}
+            {examiner.rce_rate != null && (
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                <CardLabel>RCE Rate Explained</CardLabel>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="text-center shrink-0">
+                    <p className="text-4xl font-extrabold" style={{ color: examiner.rce_rate >= 25 ? '#dc2626' : examiner.rce_rate >= 10 ? '#d97706' : '#16a34a' }}>
+                      {examiner.rce_rate.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">of applications</p>
+                  </div>
+                  <div className="flex-1">
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-1.5">
+                      <div className="h-full rounded-full" style={{ width: `${Math.min(100, examiner.rce_rate)}%`, backgroundColor: examiner.rce_rate >= 25 ? '#dc2626' : examiner.rce_rate >= 10 ? '#d97706' : '#16a34a' }} />
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-400"><span>0% (ideal)</span><span>25%+ (high)</span></div>
+                  </div>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-slate-700 mb-2">What is an RCE?</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    A <span className="font-semibold text-slate-700">Request for Continued Examination (RCE)</span> is filed after a Final Rejection when the applicant wants to keep prosecuting rather than abandon or appeal. It pays a USPTO fee (~$1,200–$2,000) to reopen examination for another round. A high RCE rate means this examiner frequently forces applicants into this extra cost. Discuss this risk with clients before filing.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {(examiner.pct_101 != null || examiner.pct_103 != null) && (
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
                 <div className="flex items-center justify-between mb-1">
@@ -318,7 +341,7 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                     { code: '§101', label: 'Subject Matter Eligibility', pct: examiner.pct_101, color: '#7c3aed', tip: 'Abstract idea rejections. Requires eligibility arguments or claim restructuring.' },
                     { code: '§102', label: 'Anticipation', pct: examiner.pct_102, color: '#dc2626', tip: 'Single prior art reference anticipates claims. Distinguish with specific limitations.' },
                     { code: '§103', label: 'Obviousness', pct: examiner.pct_103, color: '#d97706', tip: 'Combination of references. Argue unexpected results or teaching away.' },
-                    { code: '§112', label: 'Written Description', pct: examiner.pct_112, color: '#0891b2', tip: 'Spec does not support claims. Tighten claim language and add specification support before filing.' },
+                    { code: '§112', label: 'Written Description', pct: examiner.pct_112, color: '#0891b2', tip: 'Spec does not support claims. Tighten claim language before filing.' },
                   ].filter(t => t.pct != null).map(t => {
                     const pct = t.pct!;
                     const maxPct = Math.max(examiner.pct_101 ?? 0, examiner.pct_102 ?? 0, examiner.pct_103 ?? 0, examiner.pct_112 ?? 0, 1);
@@ -387,16 +410,17 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
       {/* ── COST & TIMELINE ───────────────────────────────────────────────── */}
       {activeTab === 'cost' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          {/* LEFT: Cost estimator — compact to match right side */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 self-start">
             <CardLabel>Client Cost Estimate</CardLabel>
-            <p className="text-xs text-slate-400 mb-5 leading-relaxed">Based on this examiner's historical patterns. Use as a starting point for client conversations.</p>
-            <div className="grid grid-cols-2 gap-3 mb-5">
+            <p className="text-xs text-slate-400 mb-4 leading-relaxed">Based on this examiner's historical patterns. Use as a starting point for client conversations.</p>
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <Stat label="Expected OA Responses" value={avgOAs.toFixed(1)} sub="rounds of prosecution" color={rate >= 70 ? '#16a34a' : rate >= 50 ? '#d97706' : '#dc2626'} />
-              <Stat label="RCE Probability" value={`${rceRate.toFixed(0)}%`} sub="chance of needing continued exam" color={rceRate >= 25 ? '#dc2626' : rceRate >= 10 ? '#d97706' : '#16a34a'} />
-              <Stat label="Estimated Cost Range" value={`$${(lowCost / 1000).toFixed(0)}k – $${(highCost / 1000).toFixed(0)}k`} sub="attorney fees, excl. USPTO fees" />
-              <Stat label="Time to Patent" value={`${timelineLow}–${timelineHigh} mo`} sub="filing to allowance estimate" />
+              <Stat label="RCE Probability" value={`${rceRate.toFixed(0)}%`} sub="chance of needing RCE" color={rceRate >= 25 ? '#dc2626' : rceRate >= 10 ? '#d97706' : '#16a34a'} />
+              <Stat label="Estimated Cost" value={`$${(lowCost / 1000).toFixed(0)}k–$${(highCost / 1000).toFixed(0)}k`} sub="attorney fees, excl. USPTO" />
+              <Stat label="Time to Patent" value={`${timelineLow}–${timelineHigh} mo`} sub="filing to allowance" />
             </div>
-            <div className="mb-4">
+            <div className="mb-3">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-slate-600">Probability of obtaining patent</p>
                 <p className="text-base font-extrabold" style={{ color: colors.hex }}>{Math.round(rate)}%</p>
@@ -406,15 +430,15 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
               </div>
             </div>
             {(examiner.abandonment_rate ?? 0) >= 20 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
                 <p className="text-xs text-amber-700 leading-relaxed font-medium">
-                  {(examiner.abandonment_rate ?? 0).toFixed(0)}% abandonment rate — discuss the realistic probability of not obtaining a patent with your client before committing to full prosecution.
+                  {(examiner.abandonment_rate ?? 0).toFixed(0)}% abandonment rate — discuss realistic patent probability with client before committing to full prosecution.
                 </p>
               </div>
             )}
-            <p className="text-xs text-slate-400 italic">Assumes $2,000–$5,000 per OA response. Actual costs vary by firm and complexity.</p>
           </div>
 
+          {/* RIGHT: Timing cards */}
           <div className="space-y-4">
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
               <CardLabel>Speed to Allowance</CardLabel>
@@ -443,30 +467,11 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                       <div className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-slate-400 rounded-full" style={{ left: `${(USPTO_AVG_DAYS_TO_FIRST_OA / 730) * 100}%` }} />
                     </div>
                     <div className="flex justify-between text-xs text-slate-400 mb-2"><span>0 mo</span><span>12mo avg</span><span>24 mo</span></div>
-                    <p className="text-xs font-semibold mb-1" style={{ color }}>{label}</p>
+                    <p className="text-xs font-semibold" style={{ color }}>{label}</p>
                   </>;
                 })()}
               </div>
             )}
-
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-              <CardLabel>Data Coverage</CardLabel>
-              <div className="space-y-2.5">
-                {[
-                  { dot: 'bg-green-400', text: 'USPTO PatEx dataset — 14M+ applications' },
-                  { dot: 'bg-blue-400', text: 'Allowance rates — 3-year rolling window' },
-                  { dot: 'bg-green-400', text: 'OA rejection data through March 2025' },
-                  { dot: 'bg-green-400', text: 'PTAB appeal decisions through April 2026' },
-                  ...(examiner.total_oas_analyzed ? [{ dot: 'bg-green-400', text: `${examiner.total_oas_analyzed.toLocaleString()} OA's analyzed for this examiner` }] : []),
-                  { dot: (examiner.total_applications ?? 0) > 100 ? 'bg-green-400' : 'bg-amber-400', text: (examiner.total_applications ?? 0) > 100 ? `High confidence — ${examiner.total_applications?.toLocaleString()} applications` : `Moderate sample — ${examiner.total_applications?.toLocaleString() ?? '—'} applications` },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-2.5 text-xs text-slate-600">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${item.dot}`} />
-                    {item.text}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -537,7 +542,7 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                         className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all group">
                         <div>
                           <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">{ex.name}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">AU {ex.art_unit_number} · {ex.pendency_months?.toFixed(1) ?? '—'} mo avg pendency</p>
+                          <p className="text-xs text-slate-400 mt-0.5">AU {ex.art_unit_number} · {ex.pendency_months?.toFixed(1) ?? '—'} mo avg</p>
                         </div>
                         <div className="flex items-center gap-2.5 shrink-0">
                           <div className="text-right">
@@ -553,13 +558,35 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                 <p className="text-xs text-slate-400 mt-3 italic">Assignment depends on filing details — consult strategy before targeting specific examiners.</p>
               </div>
             )}
+
+            {/* Pro feature — full peer benchmarking */}
             <div className="rounded-2xl bg-slate-900 p-5 text-white">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-3">
                 <span className="text-xs font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full">Pro</span>
-                <p className="text-xs font-bold uppercase tracking-widest opacity-75">Full Peer Benchmarking</p>
+                <p className="text-sm font-bold">Full Peer Benchmarking</p>
               </div>
-              <p className="text-sm opacity-75 leading-relaxed mb-3">Rank this examiner among all {artUnitStats?.examiner_count ?? ''} examiners in Art Unit {examiner.art_unit_number} across allowance rate, pendency, and rejection patterns.</p>
-              <button className="w-full text-xs font-bold bg-white text-slate-900 hover:bg-slate-100 transition-all rounded-xl py-2.5">Upgrade to Pro</button>
+              <p className="text-sm text-slate-400 leading-relaxed mb-4">
+                See exactly how this examiner ranks among all {artUnitStats?.examiner_count ?? ''} examiners in Art Unit {examiner.art_unit_number}:
+              </p>
+              <ul className="space-y-2 mb-4">
+                {[
+                  'Allowance rate percentile within art unit',
+                  'Pendency ranking vs peers',
+                  'Rejection type comparison',
+                  'Interview success rate vs art unit avg',
+                  'Full examiner ranking table',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2 text-xs text-slate-300">
+                    <span className="w-1 h-1 rounded-full bg-blue-400 shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/pricing"
+                className="block w-full text-center text-sm font-bold bg-white text-slate-900 hover:bg-slate-100 transition-all rounded-xl py-2.5">
+                Upgrade to Pro — $49/mo
+              </Link>
+              <p className="text-xs text-slate-500 text-center mt-2">14-day free trial · Cancel anytime</p>
             </div>
           </div>
         </div>
@@ -607,40 +634,11 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
             </div>
           )}
 
-          {examiner.rejection_codes && (() => {
-            const codes = examiner.rejection_codes!;
-            const max = Math.max(codes.non_final, codes.final, 1);
-            const nfPct = codes.total > 0 ? ((codes.non_final / codes.total) * 100).toFixed(0) : '0';
-            const fPct = codes.total > 0 ? ((codes.final / codes.total) * 100).toFixed(0) : '0';
-            const finalRatio = codes.total > 0 ? (codes.final / codes.total) * 100 : 0;
-            return (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <CardLabel>Rejection Volume on Record</CardLabel>
-                  <span className="text-sm font-bold text-slate-700 -mt-3">{codes.total.toLocaleString()} total</span>
-                </div>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Non-Final Rejections', count: codes.non_final, pct: nfPct, color: '#f59e0b', note: 'Non-final rejections allow the applicant to amend claims and continue without additional fees.' },
-                    { label: 'Final Rejections', count: codes.final, pct: fPct, color: '#ef4444', note: 'Final rejections require an RCE, appeal, or abandonment — the costlier outcome for clients.' },
-                  ].map(bar => (
-                    <div key={bar.label}>
-                      <div className="flex justify-between text-sm mb-1.5"><span className="font-semibold text-slate-700">{bar.label}</span><span className="font-bold text-slate-900">{bar.count.toLocaleString()} ({bar.pct}%)</span></div>
-                      <div className="h-3 bg-slate-100 rounded-full overflow-hidden mb-1.5"><div className="h-full rounded-full" style={{ width: `${(bar.count / max) * 100}%`, backgroundColor: bar.color }} /></div>
-                      <p className="text-xs text-slate-400">{bar.note}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <p className="text-xs text-slate-500 italic">
-                    {finalRatio > 40 ? 'Above-average final rejection rate — prepare strong first responses.'
-                      : finalRatio > 25 ? 'Moderate final rejection rate — some applications escalate to finals.'
-                      : 'Below-average final rejection rate — most rejections are non-final.'}
-                  </p>
-                </div>
-              </div>
-            );
-          })()}
+          {!showTrend && (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
+              <p className="text-sm text-slate-400">Not enough historical data to show a trend for this examiner.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -651,7 +649,7 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
             <div className="text-center">
               <p className="text-base font-bold text-slate-700 mb-2">AI Examiner Assistant</p>
               <p className="text-sm text-slate-400 leading-relaxed max-w-md">
-                Ask anything about {examiner.name}. Get prosecution strategy, appeal analysis, claim drafting tips, and cost guidance — based on this examiner's actual data.
+                Ask anything about {examiner.name}. Get prosecution strategy, appeal analysis, claim drafting tips, and cost guidance based on this examiner's actual data.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
