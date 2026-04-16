@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Navbar } from '@/components/navbar';
 
 interface ExaminerResult {
   id: string;
@@ -12,20 +13,15 @@ interface ExaminerResult {
   grant_rate_3yr?: number;
 }
 
-function ExaminerSearch({ autoFocus = false }: { autoFocus?: boolean }) {
+function ExaminerSearch() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ExaminerResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    if (autoFocus) inputRef.current?.focus();
-  }, [autoFocus]);
 
   const search = useCallback(async (q: string) => {
     if (q.length < 2) { setResults([]); setIsOpen(false); return; }
@@ -78,7 +74,6 @@ function ExaminerSearch({ autoFocus = false }: { autoFocus?: boolean }) {
           </svg>
         </span>
         <input
-          ref={inputRef}
           type="text"
           value={query}
           onChange={handleChange}
@@ -123,40 +118,13 @@ function ExaminerSearch({ autoFocus = false }: { autoFocus?: boolean }) {
 }
 
 export default function HomePage() {
-  const searchRef = useRef<HTMLDivElement>(null);
-
-  const scrollToSearch = () => {
-    searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
-
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
 
-      {/* Nav — logo slightly larger, nav perfectly centered */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center relative">
-          {/* Logo left */}
-          <Image src="/logo.png" alt="PatentIQ" width={130} height={34} className="object-contain h-10 w-auto shrink-0" priority />
-          {/* Nav absolutely centered */}
-          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
-            <a href="#how" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">How it works</a>
-            <a href="#features" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">Features</a>
-            <a href="#pricing" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">Pricing</a>
-          </nav>
-          {/* Auth right */}
-          <div className="flex items-center gap-3 ml-auto">
-            <Link href="/sign-in" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-4 py-2">
-              Sign in
-            </Link>
-            <Link href="/sign-up" className="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all px-5 py-2 rounded-xl shadow-sm">
-              Get started
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Hero */}
-      <section className="pt-32 pb-24 px-6 flex flex-col items-center text-center bg-white">
+      <section className="pt-36 pb-24 px-6 flex flex-col items-center text-center bg-white">
         <div className="inline-flex items-center gap-2 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 mb-8">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
           USPTO Examiner Intelligence Platform
@@ -168,7 +136,7 @@ export default function HomePage() {
         <p className="text-lg sm:text-xl text-slate-500 max-w-xl leading-relaxed mb-10">
           Search 18,110 USPTO examiners. See allowance rates, rejection patterns, interview stats, appeal records, and prosecution strategy — in seconds.
         </p>
-        <div className="w-full max-w-2xl mb-5" ref={searchRef}>
+        <div className="w-full max-w-2xl mb-5">
           <ExaminerSearch />
         </div>
         <p className="text-xs text-slate-400 mb-12">
@@ -222,7 +190,7 @@ export default function HomePage() {
             {[
               { title: '18,110 Examiners', desc: 'Complete USPTO examiner database — every active examiner, fully searchable by name or art unit.' },
               { title: 'Free to Search', desc: 'No account, no paywall. Basic examiner stats including allowance rates and rejection patterns are open to everyone.' },
-              { title: 'AI Strategy Summaries', desc: 'Plain-language prosecution strategy briefs powered by Claude AI, tailored to each examiner\'s patterns.' },
+              { title: 'AI Strategy Summaries', desc: "Plain-language prosecution strategy briefs powered by Claude AI, tailored to each examiner's patterns." },
             ].map((f) => (
               <div key={f.title} className="bg-slate-50 rounded-2xl p-8 flex flex-col items-center text-center gap-4 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
                 <h3 className="text-base font-bold text-slate-900">{f.title}</h3>
@@ -242,7 +210,6 @@ export default function HomePage() {
             <p className="text-slate-500">Basic search is free forever. Pro unlocks AI summaries, peer benchmarking, and more.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* Free */}
             <div className="bg-white rounded-2xl border border-slate-200 p-8">
               <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Free</p>
               <p className="text-4xl font-extrabold text-slate-900 mb-1">$0</p>
@@ -263,7 +230,6 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Pro */}
             <div className="bg-slate-900 rounded-2xl p-8 text-white relative overflow-hidden">
               <div className="absolute top-4 right-4">
                 <span className="text-xs font-bold bg-blue-500 text-white px-2.5 py-1 rounded-full">Most Popular</span>
@@ -298,7 +264,7 @@ export default function HomePage() {
             Search any USPTO examiner free. No account required to get started.
           </p>
           <button
-            onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-base font-bold transition-all shadow-lg">
             Search Examiners Free
           </button>
