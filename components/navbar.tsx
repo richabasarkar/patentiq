@@ -40,7 +40,7 @@ export function Navbar() {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center relative">
         {/* Logo */}
         <Link href="/">
-          <Image src="/logo.png" alt="PatentIQ" width={140} height={36} className="object-contain h-9 w-auto shrink-0" priority />
+          <Image src="/logo.png" alt="PatentIQ" width={180} height={47} className="object-contain h-9 w-auto shrink-0" priority />
         </Link>
 
         {/* Nav centered */}
