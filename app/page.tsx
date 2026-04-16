@@ -136,7 +136,7 @@ export default function HomePage() {
       <header className="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center relative">
           {/* Logo left */}
-          <Image src="/logo.png" alt="PatentIQ" width={130} height={34} className="object-contain h-8 w-auto shrink-0" priority />
+          <Image src="/logo.png" alt="PatentIQ" width={130} height={34} className="object-contain h-10 w-auto shrink-0" priority />
           {/* Nav absolutely centered */}
           <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             <a href="#how" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">How it works</a>
