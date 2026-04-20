@@ -113,7 +113,7 @@ function AIChatTab({ examiner }: { examiner: Examiner }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const systemPrompt = `You are an expert patent prosecution assistant helping a patent attorney analyze examiner ${examiner.name}. Respond in plain conversational sentences — no markdown headers, no bullet points, no bold text. Be direct, specific, and use the examiner data. Keep responses under 150 words unless asked for more.
+  const systemPrompt = `You are an expert patent prosecution assistant with deep knowledge of USPTO examination practices. You are helping a patent attorney analyze examiner ${examiner.name}.
 
 Key data about this examiner:
 - Art Unit: ${examiner.art_unit_number ?? 'Unknown'}
@@ -201,7 +201,9 @@ Provide concise, actionable advice. Use specific numbers from the data above. Be
                   ? 'bg-blue-600 text-white rounded-br-sm'
                   : 'bg-slate-50 text-slate-700 border border-slate-100 rounded-bl-sm'
               }`}>
-                {msg.content.split('\\n').filter(Boolean).map((line, i) => <p key={i} className='mb-1 last:mb-0'>{line}</p>)}
+                {msg.content.split('\n').map((line, i) => (
+                  <span key={i}>{line}{i < msg.content.split('\n').length - 1 && <br />}</span>
+                ))}
               </div>
             </div>
           ))
@@ -709,6 +711,42 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                 </div>
               ) : <p className="text-sm text-slate-400">No data available.</p>}
             </Card>
+
+            {/* Examiner ranking within art unit */}
+            {artUnitStats && examiner.grant_rate_percentile != null && (
+              <Card>
+                <CardLabel>Examiner Ranking — Art Unit {artUnitStats.art_unit}</CardLabel>
+                <p className="text-xs text-slate-400 mb-4">How this examiner compares to all {artUnitStats.examiner_count} examiners in their art unit.</p>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Allowance Rate', examinerVal: `${rate.toFixed(1)}%`, auVal: `${artUnitStats.avg_grant_rate.toFixed(1)}%`, diff: rate - artUnitStats.avg_grant_rate, pct: examiner.grant_rate_percentile },
+                    { label: 'Pendency', examinerVal: examiner.pendency_months ? `${examiner.pendency_months.toFixed(1)} mo` : '—', auVal: `${artUnitStats.avg_pendency_months.toFixed(1)} mo`, diff: examiner.pendency_months ? -(examiner.pendency_months - artUnitStats.avg_pendency_months) : 0, pct: examiner.pendency_percentile ? 100 - examiner.pendency_percentile : null },
+                    { label: 'Interview Rate', examinerVal: examiner.interview_allowance_rate ? `${examiner.interview_allowance_rate.toFixed(1)}%` : '—', auVal: `${artUnitStats.avg_interview_allowance_rate.toFixed(1)}%`, diff: examiner.interview_allowance_rate ? examiner.interview_allowance_rate - artUnitStats.avg_interview_allowance_rate : 0, pct: examiner.interview_rate_percentile },
+                  ].map(m => (
+                    <div key={m.label}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-xs font-semibold text-slate-600">{m.label}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-400">AU avg: {m.auVal}</span>
+                          <span className="text-sm font-bold text-slate-900">{m.examinerVal}</span>
+                          <span className={`text-xs font-semibold ${m.diff > 2 ? 'text-green-600' : m.diff < -2 ? 'text-red-500' : 'text-slate-400'}`}>
+                            {m.diff > 0 ? `+${m.diff.toFixed(1)}` : m.diff.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                      {m.pct != null && (
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${m.pct}%`, backgroundColor: m.pct >= 60 ? '#16a34a' : m.pct >= 40 ? '#d97706' : '#dc2626' }} />
+                          </div>
+                          <span className="text-xs text-slate-400 shrink-0">{m.pct.toFixed(0)}th pct.</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
           </>}
         />
       )}
