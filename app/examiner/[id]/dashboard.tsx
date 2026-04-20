@@ -113,7 +113,7 @@ function AIChatTab({ examiner }: { examiner: Examiner }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const systemPrompt = `You are an expert patent prosecution assistant with deep knowledge of USPTO examination practices. You are helping a patent attorney analyze examiner ${examiner.name}.
+  const systemPrompt = `You are an expert patent prosecution assistant helping a patent attorney analyze examiner ${examiner.name}. Respond in plain conversational sentences — no markdown headers, no bullet points, no bold text. Be direct, specific, and use the examiner data. Keep responses under 150 words unless asked for more.
 
 Key data about this examiner:
 - Art Unit: ${examiner.art_unit_number ?? 'Unknown'}
@@ -201,7 +201,7 @@ Provide concise, actionable advice. Use specific numbers from the data above. Be
                   ? 'bg-blue-600 text-white rounded-br-sm'
                   : 'bg-slate-50 text-slate-700 border border-slate-100 rounded-bl-sm'
               }`}>
-                {msg.content}
+                {msg.content.split('\\n').filter(Boolean).map((line, i) => <p key={i} className='mb-1 last:mb-0'>{line}</p>)}
               </div>
             </div>
           ))
