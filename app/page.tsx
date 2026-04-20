@@ -130,7 +130,7 @@ export default function HomePage() {
           USPTO Examiner Intelligence Platform
         </div>
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.05] max-w-4xl mb-6">
-          Know your 
+          Know your
           <span className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">examiner.</span>
         </h1>
         <p className="text-lg sm:text-xl text-slate-500 max-w-xl leading-relaxed mb-10">
