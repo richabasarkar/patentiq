@@ -276,8 +276,8 @@ export default function HomePage() {
           <Image src="/logo.png" alt="PatentIQ" width={110} height={28} className="object-contain h-7 w-auto opacity-50" />
           <p className="text-xs text-slate-400 text-center">Data sourced from USPTO PatEx dataset · Not legal advice · © {new Date().getFullYear()} PatentIQ</p>
           <div className="flex gap-6 text-xs text-slate-400">
-            <a href="#" className="hover:text-slate-600 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-slate-600 transition-colors">Terms</a>
+            <a href="/privacy" className="hover:text-slate-600 transition-colors">Privacy</a>
+            <a href="/terms" className="hover:text-slate-600 transition-colors">Terms</a>
           </div>
         </div>
       </footer>
