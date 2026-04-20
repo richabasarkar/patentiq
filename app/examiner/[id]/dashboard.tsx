@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Examiner, ArtUnitStats, SimilarExaminer } from '@/lib/types';
 
@@ -30,12 +30,26 @@ function CardLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">{children}</p>;
 }
 
+function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`bg-white rounded-2xl border border-slate-100 shadow-sm p-5 ${className}`}>{children}</div>;
+}
+
 function Stat({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
     <div className="flex flex-col items-center justify-center text-center p-4 bg-slate-50 rounded-xl">
       <p className="text-xs text-slate-400 mb-2 font-medium">{label}</p>
       <p className="text-2xl font-extrabold" style={{ color: color ?? '#0f172a' }}>{value}</p>
       {sub && <p className="text-xs text-slate-400 mt-1 leading-tight">{sub}</p>}
+    </div>
+  );
+}
+
+// ── Two-column layout wrapper ─────────────────────────────────────────────────
+function TabGrid({ left, right }: { left: React.ReactNode; right: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="space-y-4">{left}</div>
+      <div className="space-y-4">{right}</div>
     </div>
   );
 }
@@ -75,17 +89,156 @@ function buildStrategy(examiner: Examiner) {
   else { primaryAction = 'File narrow, targeted claims'; primaryDetail = 'Selective examiner. Use specific claim language and plan for multiple rejection rounds.'; primaryColor = 'border-amber-300 bg-amber-50'; }
 
   const prefs: { title: string; detail: string; impact: 'high' | 'medium' | 'low' }[] = [];
-  if (examiner.pct_101 != null && examiner.pct_101 >= 30) prefs.push({ title: `Frequently uses §101 Subject Matter Eligibility rejections (${examiner.pct_101.toFixed(0)}% of OA's)`, detail: 'Abstract idea rejections are this examiner\'s primary tool. Draft claims to avoid broad software/method language. Include concrete technical implementations in the specification and ensure claims tie to a specific technological improvement. Consider filing eligibility declarations early.', impact: 'high' });
-  if (examiner.pct_103 != null && examiner.pct_103 >= 60) prefs.push({ title: `Heavy use of §103 Obviousness rejections (${examiner.pct_103.toFixed(0)}% of OA's)`, detail: 'This examiner frequently combines prior art references to reject claims. Run a thorough prior art search before filing. Prepare secondary consideration declarations proactively. Draft claims with specific combinations of elements unlikely to be found together in the prior art.', impact: 'high' });
-  if (examiner.pct_102 != null && examiner.pct_102 >= 50) prefs.push({ title: `High §102 Anticipation rejection rate (${examiner.pct_102.toFixed(0)}% of OA's)`, detail: 'This examiner frequently finds single prior art references that anticipate claims. Include multiple distinguishing limitations in independent claims. Ensure your specification describes the novel aspects with specific technical detail not found in prior art.', impact: 'high' });
-  if (examiner.pct_112 != null && examiner.pct_112 >= 20) prefs.push({ title: `Notable §112 Written Description issues (${examiner.pct_112.toFixed(0)}% of OA's)`, detail: 'This examiner frequently finds that specifications do not adequately support the claims. Review every claim element and confirm it is explicitly described in the specification. Avoid claiming broader than what is exemplified. Add multiple working examples.', impact: 'medium' });
-  if (examiner.appeal_overturn_rate != null && examiner.appeal_overturn_rate >= 30) prefs.push({ title: `PTAB frequently overturns this examiner (${examiner.appeal_overturn_rate.toFixed(0)}% overturn rate)`, detail: 'PTAB reverses this examiner at an above-average rate. If you receive a final rejection you believe is legally flawed, appeal is a stronger-than-average strategic option. Document your appeal arguments from the first OA response.', impact: 'high' });
-  if (interviewHighlyEffective) prefs.push({ title: `Interviews significantly improve outcomes (+${((ir ?? 0) - rate).toFixed(1)}pp allowance rate)`, detail: 'Direct examiner interviews are highly effective with this examiner. Request an interview after the first OA before filing a formal response. Use it to narrow the scope of disagreement and propose claim amendments collaboratively. This often saves multiple OA rounds.', impact: 'high' });
-  else if (interviewIneffective) prefs.push({ title: 'Interviews rarely lead to allowance with this examiner', detail: 'Interviews have a below-average success rate here. Invest your time in thorough written responses with strong technical and legal arguments rather than relying on interviews.', impact: 'high' });
-  if ((examiner.rce_rate ?? 0) >= 20) prefs.push({ title: `High RCE rate — ${(examiner.rce_rate ?? 0).toFixed(0)}% of applications require continued examination`, detail: 'An RCE (Request for Continued Examination) is filed when prosecution hits a dead end after a Final Rejection and the applicant wants to continue without abandoning. This examiner\'s high RCE rate means additional prosecution fees are likely — budget $1,200–$2,000 for USPTO RCE fees plus attorney time. Discuss this risk with your client upfront.', impact: 'medium' });
-  if (prefs.length === 0) prefs.push({ title: 'Standard prosecution approach is effective', detail: 'This examiner does not show strong skews toward particular rejection types. Use standard prosecution strategy: clear claim language, solid specification support, and thorough prior art search.', impact: 'low' });
+  if (examiner.pct_101 != null && examiner.pct_101 >= 30) prefs.push({ title: `Frequently uses §101 Subject Matter Eligibility rejections (${examiner.pct_101.toFixed(0)}% of OA's)`, detail: 'Abstract idea rejections are this examiner\'s primary tool. Draft claims to avoid broad software/method language. Include concrete technical implementations and ensure claims tie to a specific technological improvement.', impact: 'high' });
+  if (examiner.pct_103 != null && examiner.pct_103 >= 60) prefs.push({ title: `Heavy use of §103 Obviousness rejections (${examiner.pct_103.toFixed(0)}% of OA's)`, detail: 'This examiner frequently combines prior art references. Run a thorough prior art search before filing. Prepare secondary consideration declarations proactively.', impact: 'high' });
+  if (examiner.pct_102 != null && examiner.pct_102 >= 50) prefs.push({ title: `High §102 Anticipation rejection rate (${examiner.pct_102.toFixed(0)}% of OA's)`, detail: 'Include multiple distinguishing limitations in independent claims. Ensure your specification describes the novel aspects with specific technical detail not found in prior art.', impact: 'high' });
+  if (examiner.pct_112 != null && examiner.pct_112 >= 20) prefs.push({ title: `Notable §112 Written Description issues (${examiner.pct_112.toFixed(0)}% of OA's)`, detail: 'Review every claim element and confirm it is explicitly described in the specification. Avoid claiming broader than what is exemplified.', impact: 'medium' });
+  if (examiner.appeal_overturn_rate != null && examiner.appeal_overturn_rate >= 30) prefs.push({ title: `PTAB frequently overturns this examiner (${examiner.appeal_overturn_rate.toFixed(0)}% overturn rate)`, detail: 'PTAB reverses this examiner at an above-average rate. Appeal is a stronger-than-average strategic option after a final rejection.', impact: 'high' });
+  if (interviewHighlyEffective) prefs.push({ title: `Interviews significantly improve outcomes (+${((ir ?? 0) - rate).toFixed(1)}pp allowance rate)`, detail: 'Request an interview after the first OA before filing a formal response. Use it to narrow the scope of disagreement and propose claim amendments collaboratively.', impact: 'high' });
+  else if (interviewIneffective) prefs.push({ title: 'Interviews rarely lead to allowance with this examiner', detail: 'Invest in thorough written responses with strong technical and legal arguments rather than relying on interviews.', impact: 'high' });
+  if ((examiner.rce_rate ?? 0) >= 20) prefs.push({ title: `High RCE rate — ${(examiner.rce_rate ?? 0).toFixed(0)}% of applications require continued examination`, detail: 'An RCE reopens examination after a Final Rejection at a USPTO fee of ~$1,200–$2,000. Discuss this risk with your client upfront.', impact: 'medium' });
+  if (prefs.length === 0) prefs.push({ title: 'Standard prosecution approach is effective', detail: 'This examiner does not show strong skews toward particular rejection types. Use standard prosecution strategy.', impact: 'low' });
 
   return { personality, primaryAction, primaryDetail, primaryColor, prefs, confidence, confidenceNote, interviewImpact, interviewImpactColor };
+}
+
+// ── AI Chat ───────────────────────────────────────────────────────────────────
+function AIChatTab({ examiner }: { examiner: Examiner }) {
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const systemPrompt = `You are an expert patent prosecution assistant with deep knowledge of USPTO examination practices. You are helping a patent attorney analyze examiner ${examiner.name}.
+
+Key data about this examiner:
+- Art Unit: ${examiner.art_unit_number ?? 'Unknown'}
+- Allowance Rate (3yr): ${examiner.grant_rate_3yr?.toFixed(1) ?? 'Unknown'}%
+- Total Applications: ${examiner.total_applications?.toLocaleString() ?? 'Unknown'}
+- Avg Pendency: ${examiner.pendency_months?.toFixed(1) ?? 'Unknown'} months
+- Interview Allowance Rate: ${examiner.interview_allowance_rate?.toFixed(1) ?? 'Unknown'}%
+- Interview Count: ${examiner.interview_count ?? 'Unknown'}
+- Avg OAs to Allowance: ${examiner.avg_oas_to_allowance?.toFixed(1) ?? 'Unknown'}
+- Abandonment Rate: ${examiner.abandonment_rate?.toFixed(1) ?? 'Unknown'}%
+- RCE Rate: ${examiner.rce_rate?.toFixed(1) ?? 'Unknown'}%
+- §101 Rejection Rate: ${examiner.pct_101?.toFixed(1) ?? 'Unknown'}%
+- §102 Rejection Rate: ${examiner.pct_102?.toFixed(1) ?? 'Unknown'}%
+- §103 Rejection Rate: ${examiner.pct_103?.toFixed(1) ?? 'Unknown'}%
+- §112 Rejection Rate: ${examiner.pct_112?.toFixed(1) ?? 'Unknown'}%
+- PTAB Appeal Count: ${examiner.appeal_count ?? 'Unknown'}
+- PTAB Overturn Rate: ${examiner.appeal_overturn_rate?.toFixed(1) ?? 'Unknown'}%
+- Allowance after 1st OA: ${examiner.allowance_after_1_oa?.toFixed(1) ?? 'Unknown'}%
+- Allowance after 2nd OA: ${examiner.allowance_after_2_oa?.toFixed(1) ?? 'Unknown'}%
+- Avg Days to First OA: ${examiner.avg_days_to_first_oa ? (examiner.avg_days_to_first_oa / 30.4).toFixed(1) + ' months' : 'Unknown'}
+
+Provide concise, actionable advice. Use specific numbers from the data above. Be direct and practical — this attorney needs to make real decisions. Keep responses focused and under 200 words unless asked for more detail.`;
+
+  const suggestedQuestions = [
+    'Should I request an interview with this examiner?',
+    'What claim language works best?',
+    'Is appeal a viable option here?',
+    'How should I set client cost expectations?',
+    'What is the fastest path to allowance?',
+  ];
+
+  const send = async (text: string) => {
+    if (!text.trim() || loading) return;
+    const userMsg = { role: 'user' as const, content: text };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
+      const data = await res.json();
+      const reply = data.content?.[0]?.text ?? 'Sorry, I could not generate a response.';
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, there was an error. Please try again.' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col" style={{ height: '600px' }}>
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-5">
+            <div className="text-center">
+              <p className="text-base font-bold text-slate-700 mb-2">AI Examiner Assistant</p>
+              <p className="text-sm text-slate-400 leading-relaxed max-w-md">
+                Ask anything about {examiner.name}. I have access to all their prosecution data and can give specific, data-driven advice.
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-2 max-w-xl">
+              {suggestedQuestions.map(q => (
+                <button key={q} onClick={() => send(q)}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5 text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all">
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                msg.role === 'user'
+                  ? 'bg-blue-600 text-white rounded-br-sm'
+                  : 'bg-slate-50 text-slate-700 border border-slate-100 rounded-bl-sm'
+              }`}>
+                {msg.content}
+              </div>
+            </div>
+          ))
+        )}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl rounded-bl-sm px-4 py-3">
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div className="border-t border-slate-100 p-4 flex gap-3 items-center">
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && send(input)}
+          placeholder={`Ask anything about ${examiner.name}...`}
+          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-200"
+        />
+        <button onClick={() => send(input)} disabled={loading || !input.trim()}
+          className="bg-blue-600 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-blue-700 transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+          Send
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
@@ -150,9 +303,9 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
 
       {/* ── STRATEGY ─────────────────────────────────────────────────────── */}
       {activeTab === 'strategy' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* LEFT */}
-          <div className="space-y-4">
+        <TabGrid
+          left={<>
+            {/* Interviews card */}
             {examiner.interview_count != null && examiner.interview_allowance_rate != null && (() => {
               const count = examiner.interview_count!;
               const ir = examiner.interview_allowance_rate!;
@@ -160,11 +313,9 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
               const fillLen = (Math.min(100, ir) / 100) * circ;
               const color = ir >= 50 ? '#16a34a' : ir >= 25 ? '#d97706' : '#dc2626';
               const noteStyle = ir > 50 ? 'text-green-700 bg-green-50 border-green-200' : ir >= 25 ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-red-700 bg-red-50 border-red-200';
-              const noteText = ir > 50 ? 'Highly effective — request one early in prosecution'
-                : ir >= 25 ? 'Sometimes helps — worth requesting after first OA'
-                : 'Rarely effective — focus resources on written arguments';
+              const noteText = ir > 50 ? 'Highly effective — request one early' : ir >= 25 ? 'Sometimes helps — worth requesting' : 'Rarely effective — focus on written arguments';
               return (
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                <Card>
                   <CardLabel>Examiner Interviews</CardLabel>
                   <div className="flex items-center gap-5 mb-4">
                     <div>
@@ -176,8 +327,7 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                     <div className="flex flex-col items-center gap-1">
                       <svg width="64" height="64" viewBox="0 0 64 64">
                         <circle cx="32" cy="32" r="28" fill="none" stroke="#f1f5f9" strokeWidth="7" />
-                        <circle cx="32" cy="32" r="28" fill="none" stroke={color} strokeWidth="7" strokeLinecap="round"
-                          strokeDasharray={`${fillLen} ${circ}`} transform="rotate(-90 32 32)" />
+                        <circle cx="32" cy="32" r="28" fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" strokeDasharray={`${fillLen} ${circ}`} transform="rotate(-90 32 32)" />
                         <text x="32" y="29" textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="800" fill={color}>{ir.toFixed(0)}%</text>
                         <text x="32" y="41" textAnchor="middle" dominantBaseline="middle" fontSize="7" fill="#94a3b8">allow</text>
                       </svg>
@@ -186,20 +336,22 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                     {strategy.interviewImpact && (
                       <div className="flex-1 text-center">
                         <p className={`text-2xl font-extrabold ${strategy.interviewImpactColor}`}>{strategy.interviewImpact}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">vs baseline allowance rate</p>
+                        <p className="text-xs text-slate-400 mt-0.5">vs baseline</p>
                       </div>
                     )}
                   </div>
                   <div className={`rounded-xl border px-3 py-2 text-xs font-semibold ${noteStyle}`}>{noteText}</div>
-                </div>
+                </Card>
               );
             })()}
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            {/* Profile */}
+            <Card>
               <CardLabel>Examiner Profile</CardLabel>
               <p className="text-sm text-slate-700 leading-relaxed">{strategy.personality}</p>
-            </div>
+            </Card>
 
+            {/* Recommended step */}
             <div className={`rounded-2xl border-2 p-5 ${strategy.primaryColor}`}>
               <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1.5">Recommended Next Step</p>
               <h3 className="text-base font-extrabold text-slate-900 mb-2">{strategy.primaryAction}</h3>
@@ -210,49 +362,45 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${strategy.confidence === 'High' ? 'bg-green-400' : strategy.confidence === 'Medium' ? 'bg-amber-400' : 'bg-red-400'}`} />
               {strategy.confidenceNote}
             </p>
-          </div>
-
-          {/* RIGHT */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <CardLabel>Examiner Tendencies & Preferences</CardLabel>
-            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-              Known patterns from {examiner.total_oas_analyzed?.toLocaleString() ?? examiner.total_applications?.toLocaleString() ?? '—'} office actions. Use these to tailor your claim drafting strategy.
-            </p>
-            <div className="space-y-5">
-              {strategy.prefs.map((pref, i) => (
-                <div key={i} className="border-b border-slate-100 pb-5 last:border-0 last:pb-0">
-                  <div className="flex items-start gap-3 mb-2">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5 border ${pref.impact === 'high' ? 'bg-red-50 text-red-600 border-red-200' : pref.impact === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{pref.impact}</span>
-                    <p className="text-sm font-semibold text-slate-800 leading-snug">{pref.title}</p>
+          </>}
+          right={
+            <Card className="h-full">
+              <CardLabel>Examiner Tendencies & Preferences</CardLabel>
+              <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                Known patterns from {examiner.total_oas_analyzed?.toLocaleString() ?? examiner.total_applications?.toLocaleString() ?? '—'} office actions.
+              </p>
+              <div className="space-y-5">
+                {strategy.prefs.map((pref, i) => (
+                  <div key={i} className="border-b border-slate-100 pb-5 last:border-0 last:pb-0">
+                    <div className="flex items-start gap-3 mb-2">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5 border ${pref.impact === 'high' ? 'bg-red-50 text-red-600 border-red-200' : pref.impact === 'medium' ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{pref.impact}</span>
+                      <p className="text-sm font-semibold text-slate-800 leading-snug">{pref.title}</p>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed ml-12">{pref.detail}</p>
                   </div>
-                  <p className="text-xs text-slate-500 leading-relaxed ml-12">{pref.detail}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+                ))}
+              </div>
+            </Card>
+          }
+        />
       )}
 
       {/* ── PROSECUTION OUTCOMES ──────────────────────────────────────────── */}
       {activeTab === 'outcomes' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <TabGrid
+          left={<>
             {(examiner.allowance_after_1_oa != null || examiner.abandonment_rate != null) && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <Card>
                 <CardLabel>Prosecution Funnel</CardLabel>
                 <p className="text-xs text-slate-400 mb-4">What happens to a typical application with this examiner.</p>
                 <div className="space-y-3 mb-5">
                   {[
                     { label: 'Application Filed', pct: 100, color: '#3b82f6' },
-                    ...(examiner.allowance_after_1_oa != null ? [{ label: `Allowed after 1st OA response — ${examiner.allowance_after_1_oa.toFixed(0)}%`, pct: examiner.allowance_after_1_oa, color: '#16a34a' }] : []),
-                    ...(examiner.allowance_after_2_oa != null ? [{ label: `Allowed after 2nd OA response — ${examiner.allowance_after_2_oa.toFixed(0)}% cumulative`, pct: examiner.allowance_after_2_oa, color: '#15803d' }] : []),
-                    ...(examiner.abandonment_rate != null ? [{ label: `Allowed — ${(100 - examiner.abandonment_rate).toFixed(0)}% (all rounds)`, pct: 100 - examiner.abandonment_rate, color: colors.hex }] : []),
+                    ...(examiner.allowance_after_1_oa != null ? [{ label: `Allowed after 1st OA — ${examiner.allowance_after_1_oa.toFixed(0)}%`, pct: examiner.allowance_after_1_oa, color: '#16a34a' }] : []),
+                    ...(examiner.allowance_after_2_oa != null ? [{ label: `Allowed after 2nd OA — ${examiner.allowance_after_2_oa.toFixed(0)}% cumulative`, pct: examiner.allowance_after_2_oa, color: '#15803d' }] : []),
                   ].map((stage, i) => (
                     <div key={i}>
-                      <div className="flex justify-between text-xs mb-1.5">
-                        <span className="text-slate-600 font-medium">{stage.label}</span>
-                        <span className="font-bold text-slate-900">{stage.pct.toFixed(0)}%</span>
-                      </div>
+                      <div className="flex justify-between text-xs mb-1.5"><span className="text-slate-600 font-medium">{stage.label}</span><span className="font-bold text-slate-900">{stage.pct.toFixed(0)}%</span></div>
                       <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${stage.pct}%`, backgroundColor: stage.color, minWidth: '4px' }} />
                       </div>
@@ -261,53 +409,65 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Allowance after 1st OA", value: examiner.allowance_after_1_oa, suffix: '%', good: 50, ok: 25 },
-                    { label: "Allowance after 2nd OA", value: examiner.allowance_after_2_oa, suffix: '%', good: 60, ok: 35 },
-                    { label: "Abandonment Rate", value: examiner.abandonment_rate, suffix: '%', good: -15, ok: -30, invert: true },
-                    { label: "RCE Rate", value: examiner.rce_rate, suffix: '%', good: -10, ok: -25, invert: true },
+                    { label: "Allowance after 1st OA", value: examiner.allowance_after_1_oa, good: 50, ok: 25 },
+                    { label: "Allowance after 2nd OA", value: examiner.allowance_after_2_oa, good: 60, ok: 35 },
+                    { label: "Abandonment Rate", value: examiner.abandonment_rate, good: -15, ok: -30, invert: true },
+                    { label: "RCE Rate", value: examiner.rce_rate, good: -10, ok: -25, invert: true },
                   ].filter(m => m.value != null).map(m => {
                     const v = m.value!;
-                    const c = m.invert
-                      ? v <= Math.abs(m.good) ? '#16a34a' : v <= Math.abs(m.ok) ? '#d97706' : '#dc2626'
-                      : v >= m.good ? '#16a34a' : v >= m.ok ? '#d97706' : '#dc2626';
-                    return <Stat key={m.label} label={m.label} value={`${v.toFixed(1)}${m.suffix}`} color={c} />;
+                    const c = m.invert ? v <= Math.abs(m.good) ? '#16a34a' : v <= Math.abs(m.ok) ? '#d97706' : '#dc2626' : v >= m.good ? '#16a34a' : v >= m.ok ? '#d97706' : '#dc2626';
+                    return <Stat key={m.label} label={m.label} value={`${v.toFixed(1)}%`} color={c} />;
                   })}
                 </div>
-              </div>
+              </Card>
             )}
 
             {examiner.avg_oas_to_allowance != null && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <Card>
                 <CardLabel>Avg OA's to Allowance</CardLabel>
                 <p className="text-xs text-slate-400 mb-4">How many rounds of office actions before allowance, on average.</p>
                 <div className="flex items-center gap-5">
                   <div className="text-center shrink-0">
-                    <p className="text-5xl font-extrabold" style={{ color: examiner.avg_oas_to_allowance <= 1.5 ? '#16a34a' : examiner.avg_oas_to_allowance <= 2.5 ? '#d97706' : '#dc2626' }}>
-                      {examiner.avg_oas_to_allowance.toFixed(1)}
-                    </p>
+                    <p className="text-5xl font-extrabold" style={{ color: examiner.avg_oas_to_allowance <= 1.5 ? '#16a34a' : examiner.avg_oas_to_allowance <= 2.5 ? '#d97706' : '#dc2626' }}>{examiner.avg_oas_to_allowance.toFixed(1)}</p>
                     <p className="text-xs text-slate-400 mt-1">office actions</p>
                   </div>
                   <div className="flex-1">
                     <div className="relative h-2.5 bg-slate-100 rounded-full mb-2">
                       <div className="absolute top-0 h-full rounded-full bg-gradient-to-r from-green-400 via-amber-400 to-red-400 w-full opacity-25" />
-                      <div className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow"
-                        style={{ left: `${Math.min(93, (examiner.avg_oas_to_allowance / 5) * 100)}%`, backgroundColor: examiner.avg_oas_to_allowance <= 1.5 ? '#16a34a' : examiner.avg_oas_to_allowance <= 2.5 ? '#d97706' : '#dc2626' }} />
+                      <div className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow" style={{ left: `${Math.min(93, (examiner.avg_oas_to_allowance / 5) * 100)}%`, backgroundColor: examiner.avg_oas_to_allowance <= 1.5 ? '#16a34a' : examiner.avg_oas_to_allowance <= 2.5 ? '#d97706' : '#dc2626' }} />
                     </div>
-                    <div className="flex justify-between text-xs text-slate-400 mb-3"><span>1 (easy)</span><span>2–3 (typical)</span><span>4+ (difficult)</span></div>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      {examiner.avg_oas_to_allowance <= 1.5 ? 'Most applications resolve in a single round.'
-                        : examiner.avg_oas_to_allowance <= 2.5 ? 'Typical prosecution length — plan for about 2 rounds.'
-                        : 'Extended prosecution expected — budget for 3+ rounds upfront.'}
-                    </p>
+                    <div className="flex justify-between text-xs text-slate-400 mb-2"><span>1 (easy)</span><span>2–3 (typical)</span><span>4+ (difficult)</span></div>
+                    <p className="text-xs text-slate-500">{examiner.avg_oas_to_allowance <= 1.5 ? 'Most applications resolve in a single round.' : examiner.avg_oas_to_allowance <= 2.5 ? 'Plan for about 2 rounds of prosecution.' : 'Extended prosecution — budget for 3+ rounds upfront.'}</p>
                   </div>
                 </div>
-              </div>
+              </Card>
             )}
-          </div>
+          </>}
+          right={<>
+            {examiner.rce_rate != null && (
+              <Card>
+                <CardLabel>RCE Rate Explained</CardLabel>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="text-center shrink-0">
+                    <p className="text-4xl font-extrabold" style={{ color: examiner.rce_rate >= 25 ? '#dc2626' : examiner.rce_rate >= 10 ? '#d97706' : '#16a34a' }}>{examiner.rce_rate.toFixed(1)}%</p>
+                    <p className="text-xs text-slate-400 mt-0.5">of applications</p>
+                  </div>
+                  <div className="flex-1">
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-1.5">
+                      <div className="h-full rounded-full" style={{ width: `${Math.min(100, examiner.rce_rate)}%`, backgroundColor: examiner.rce_rate >= 25 ? '#dc2626' : examiner.rce_rate >= 10 ? '#d97706' : '#16a34a' }} />
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-400"><span>0% (ideal)</span><span>25%+ (high)</span></div>
+                  </div>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-slate-700 mb-2">What is an RCE?</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">A <span className="font-semibold text-slate-700">Request for Continued Examination (RCE)</span> is filed after a Final Rejection when the applicant wants to keep prosecuting. It costs a USPTO fee (~$1,200–$2,000) to reopen examination. A high RCE rate means this examiner frequently forces applicants into this extra cost.</p>
+                </div>
+              </Card>
+            )}
 
-          <div className="space-y-4">
             {(examiner.pct_101 != null || examiner.pct_103 != null) && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <Card>
                 <div className="flex items-center justify-between mb-1">
                   <CardLabel>Rejection Type Breakdown</CardLabel>
                   {examiner.total_oas_analyzed && <span className="text-xs text-slate-400 -mt-3">{examiner.total_oas_analyzed.toLocaleString()} OA's</span>}
@@ -318,28 +478,23 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                     { code: '§101', label: 'Subject Matter Eligibility', pct: examiner.pct_101, color: '#7c3aed', tip: 'Abstract idea rejections. Requires eligibility arguments or claim restructuring.' },
                     { code: '§102', label: 'Anticipation', pct: examiner.pct_102, color: '#dc2626', tip: 'Single prior art reference anticipates claims. Distinguish with specific limitations.' },
                     { code: '§103', label: 'Obviousness', pct: examiner.pct_103, color: '#d97706', tip: 'Combination of references. Argue unexpected results or teaching away.' },
-                    { code: '§112', label: 'Written Description', pct: examiner.pct_112, color: '#0891b2', tip: 'Spec does not support claims. Tighten claim language and add specification support before filing.' },
+                    { code: '§112', label: 'Written Description', pct: examiner.pct_112, color: '#0891b2', tip: 'Spec does not support claims. Tighten claim language before filing.' },
                   ].filter(t => t.pct != null).map(t => {
                     const pct = t.pct!;
                     const maxPct = Math.max(examiner.pct_101 ?? 0, examiner.pct_102 ?? 0, examiner.pct_103 ?? 0, examiner.pct_112 ?? 0, 1);
                     return (
                       <div key={t.code}>
                         <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-black" style={{ color: t.color }}>{t.code}</span>
-                            <span className="text-xs font-semibold text-slate-700">{t.label}</span>
-                          </div>
+                          <div className="flex items-center gap-2"><span className="text-xs font-black" style={{ color: t.color }}>{t.code}</span><span className="text-xs font-semibold text-slate-700">{t.label}</span></div>
                           <span className="text-sm font-extrabold text-slate-900">{pct.toFixed(1)}%</span>
                         </div>
-                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-1.5">
-                          <div className="h-full rounded-full" style={{ width: `${(pct / maxPct) * 100}%`, backgroundColor: t.color }} />
-                        </div>
+                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-1.5"><div className="h-full rounded-full" style={{ width: `${(pct / maxPct) * 100}%`, backgroundColor: t.color }} /></div>
                         <p className="text-xs text-slate-400">{t.tip}</p>
                       </div>
                     );
                   })}
                 </div>
-              </div>
+              </Card>
             )}
 
             {examiner.appeal_count != null && (() => {
@@ -349,74 +504,56 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
               const appealLabel = overturn >= 35 ? 'Appeal-Worthy' : overturn >= 20 ? 'Mixed Results' : 'Avoid Appeal';
               const appealStyle = overturn >= 35 ? 'text-green-700 bg-green-50 border-green-200' : overturn >= 20 ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-red-700 bg-red-50 border-red-200';
               return (
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                <Card>
                   <div className="flex items-center justify-between mb-1">
                     <CardLabel>PTAB Appeal Record</CardLabel>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full border -mt-3 ${appealStyle}`}>{appealLabel}</span>
                   </div>
-                  <p className="text-xs text-slate-400 mb-4">
-                    Of {examiner.appeal_count} cases that went to appeal: {affirm.toFixed(0)}% affirmed (USPTO won), {overturn.toFixed(0)}% reversed (applicant won).
-                  </p>
-                  <div className="flex items-center gap-5 mb-4">
+                  <p className="text-xs text-slate-400 mb-4">Of {examiner.appeal_count} cases appealed: {affirm.toFixed(0)}% affirmed (USPTO won), {overturn.toFixed(0)}% reversed (applicant won).</p>
+                  <div className="flex items-center gap-5 mb-3">
                     <div className="flex-1 space-y-2.5">
-                      <div>
-                        <div className="flex justify-between text-xs mb-1.5"><span className="text-slate-500 font-medium">Affirmed — USPTO wins</span><span className="font-bold text-slate-700">{affirm.toFixed(1)}%</span></div>
-                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full bg-slate-300" style={{ width: `${affirm}%` }} /></div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-xs mb-1.5"><span className="text-slate-500 font-medium">Reversed — applicant wins</span><span className="font-bold" style={{ color: appealColor }}>{overturn.toFixed(1)}%</span></div>
-                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${overturn}%`, backgroundColor: appealColor }} /></div>
-                      </div>
+                      <div><div className="flex justify-between text-xs mb-1.5"><span className="text-slate-500">Affirmed — USPTO wins</span><span className="font-bold text-slate-700">{affirm.toFixed(1)}%</span></div><div className="h-3 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full bg-slate-300" style={{ width: `${affirm}%` }} /></div></div>
+                      <div><div className="flex justify-between text-xs mb-1.5"><span className="text-slate-500">Reversed — applicant wins</span><span className="font-bold" style={{ color: appealColor }}>{overturn.toFixed(1)}%</span></div><div className="h-3 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${overturn}%`, backgroundColor: appealColor }} /></div></div>
                     </div>
-                    <div className="text-center shrink-0 w-20">
-                      <p className="text-4xl font-black" style={{ color: appealColor }}>{overturn.toFixed(0)}%</p>
-                      <p className="text-xs text-slate-400">applicant<br />win rate</p>
-                    </div>
+                    <div className="text-center shrink-0 w-16"><p className="text-3xl font-black" style={{ color: appealColor }}>{overturn.toFixed(0)}%</p><p className="text-xs text-slate-400">win rate</p></div>
                   </div>
-                  <p className="text-xs text-slate-500 italic leading-relaxed">
-                    {overturn >= 30 ? `PTAB overturns this examiner ${overturn.toFixed(0)}% of the time — appeal is a strong option after final rejection.`
-                      : `PTAB affirms this examiner ${affirm.toFixed(0)}% of the time. Focus on amendment or RCE over appeal.`}
-                  </p>
-                </div>
+                  <p className="text-xs text-slate-500 italic">{overturn >= 30 ? `PTAB overturns this examiner ${overturn.toFixed(0)}% of the time — appeal is a strong option.` : `PTAB affirms ${affirm.toFixed(0)}% of the time — focus on amendment or RCE.`}</p>
+                </Card>
               );
             })()}
-          </div>
-        </div>
+          </>}
+        />
       )}
 
       {/* ── COST & TIMELINE ───────────────────────────────────────────────── */}
       {activeTab === 'cost' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <CardLabel>Client Cost Estimate</CardLabel>
-            <p className="text-xs text-slate-400 mb-5 leading-relaxed">Based on this examiner's historical patterns. Use as a starting point for client conversations.</p>
-            <div className="grid grid-cols-2 gap-3 mb-5">
-              <Stat label="Expected OA Responses" value={avgOAs.toFixed(1)} sub="rounds of prosecution" color={rate >= 70 ? '#16a34a' : rate >= 50 ? '#d97706' : '#dc2626'} />
-              <Stat label="RCE Probability" value={`${rceRate.toFixed(0)}%`} sub="chance of needing continued exam" color={rceRate >= 25 ? '#dc2626' : rceRate >= 10 ? '#d97706' : '#16a34a'} />
-              <Stat label="Estimated Cost Range" value={`$${(lowCost / 1000).toFixed(0)}k – $${(highCost / 1000).toFixed(0)}k`} sub="attorney fees, excl. USPTO fees" />
-              <Stat label="Time to Patent" value={`${timelineLow}–${timelineHigh} mo`} sub="filing to allowance estimate" />
-            </div>
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-slate-600">Probability of obtaining patent</p>
-                <p className="text-base font-extrabold" style={{ color: colors.hex }}>{Math.round(rate)}%</p>
+        <TabGrid
+          left={
+            <Card className="self-start">
+              <CardLabel>Client Cost Estimate</CardLabel>
+              <p className="text-xs text-slate-400 mb-4 leading-relaxed">Based on this examiner's historical patterns. Use as a starting point for client conversations.</p>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <Stat label="Expected OA Responses" value={avgOAs.toFixed(1)} sub="rounds of prosecution" color={rate >= 70 ? '#16a34a' : rate >= 50 ? '#d97706' : '#dc2626'} />
+                <Stat label="RCE Probability" value={`${rceRate.toFixed(0)}%`} sub="chance of needing RCE" color={rceRate >= 25 ? '#dc2626' : rceRate >= 10 ? '#d97706' : '#16a34a'} />
+                <Stat label="Estimated Cost" value={`$${(lowCost / 1000).toFixed(0)}k–$${(highCost / 1000).toFixed(0)}k`} sub="attorney fees, excl. USPTO" />
+                <Stat label="Time to Patent" value={`${timelineLow}–${timelineHigh} mo`} sub="filing to allowance" />
               </div>
-              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${rate}%`, backgroundColor: colors.hex }} />
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-slate-600">Probability of obtaining patent</p>
+                  <p className="text-base font-extrabold" style={{ color: colors.hex }}>{Math.round(rate)}%</p>
+                </div>
+                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${rate}%`, backgroundColor: colors.hex }} /></div>
               </div>
-            </div>
-            {(examiner.abandonment_rate ?? 0) >= 20 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
-                <p className="text-xs text-amber-700 leading-relaxed font-medium">
-                  {(examiner.abandonment_rate ?? 0).toFixed(0)}% abandonment rate — discuss the realistic probability of not obtaining a patent with your client before committing to full prosecution.
-                </p>
-              </div>
-            )}
-            <p className="text-xs text-slate-400 italic">Assumes $2,000–$5,000 per OA response. Actual costs vary by firm and complexity.</p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              {(examiner.abandonment_rate ?? 0) >= 20 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                  <p className="text-xs text-amber-700 font-medium">{(examiner.abandonment_rate ?? 0).toFixed(0)}% abandonment rate — discuss realistic patent probability with client before committing to full prosecution.</p>
+                </div>
+              )}
+            </Card>
+          }
+          right={<>
+            <Card>
               <CardLabel>Speed to Allowance</CardLabel>
               <div className="flex items-end gap-2 mb-4"><p className="text-5xl font-black text-slate-900">{examiner.pendency_months?.toFixed(1) ?? '—'}</p><p className="text-sm text-slate-400 mb-1.5">months avg</p></div>
               <div className="relative h-2 bg-slate-100 rounded-full mb-2">
@@ -426,10 +563,10 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
               <div className="flex justify-between text-xs text-slate-400 mb-2"><span>0 mo</span><span>{USPTO_AVG_PENDENCY}mo USPTO avg</span><span>60 mo</span></div>
               {pendencyContext && <p className="text-xs text-slate-500 italic">{pendencyContext}</p>}
               {examiner.pendency_percentile != null && <div className="mt-2"><PercentileBadge pct={100 - examiner.pendency_percentile} /></div>}
-            </div>
+            </Card>
 
             {examiner.avg_days_to_first_oa != null && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <Card>
                 <CardLabel>Time to First OA</CardLabel>
                 <div className="flex items-end gap-2 mb-4"><p className="text-5xl font-black text-slate-900">{(examiner.avg_days_to_first_oa / 30.4).toFixed(1)}</p><p className="text-sm text-slate-400 mb-1.5">months avg</p></div>
                 {(() => {
@@ -443,13 +580,13 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                       <div className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-slate-400 rounded-full" style={{ left: `${(USPTO_AVG_DAYS_TO_FIRST_OA / 730) * 100}%` }} />
                     </div>
                     <div className="flex justify-between text-xs text-slate-400 mb-2"><span>0 mo</span><span>12mo avg</span><span>24 mo</span></div>
-                    <p className="text-xs font-semibold mb-1" style={{ color }}>{label}</p>
+                    <p className="text-xs font-semibold" style={{ color }}>{label}</p>
                   </>;
                 })()}
-              </div>
+              </Card>
             )}
 
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <Card>
               <CardLabel>Data Coverage</CardLabel>
               <div className="space-y-2.5">
                 {[
@@ -457,8 +594,8 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                   { dot: 'bg-blue-400', text: 'Allowance rates — 3-year rolling window' },
                   { dot: 'bg-green-400', text: 'OA rejection data through March 2025' },
                   { dot: 'bg-green-400', text: 'PTAB appeal decisions through April 2026' },
-                  ...(examiner.total_oas_analyzed ? [{ dot: 'bg-green-400', text: `${examiner.total_oas_analyzed.toLocaleString()} OA's analyzed for this examiner` }] : []),
-                  { dot: (examiner.total_applications ?? 0) > 100 ? 'bg-green-400' : 'bg-amber-400', text: (examiner.total_applications ?? 0) > 100 ? `High confidence — ${examiner.total_applications?.toLocaleString()} applications` : `Moderate sample — ${examiner.total_applications?.toLocaleString() ?? '—'} applications` },
+                  ...(examiner.total_oas_analyzed ? [{ dot: 'bg-green-400', text: `${examiner.total_oas_analyzed.toLocaleString()} OA's analyzed` }] : []),
+                  { dot: (examiner.total_applications ?? 0) > 100 ? 'bg-green-400' : 'bg-amber-400', text: (examiner.total_applications ?? 0) > 100 ? `High confidence — ${examiner.total_applications?.toLocaleString()} apps` : `Moderate sample — ${examiner.total_applications?.toLocaleString() ?? '—'} apps` },
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-xs text-slate-600">
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${item.dot}`} />
@@ -466,16 +603,16 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
+            </Card>
+          </>}
+        />
       )}
 
       {/* ── BENCHMARKS ────────────────────────────────────────────────────── */}
       {activeTab === 'benchmarks' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {artUnitStats && (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <TabGrid
+          left={artUnitStats ? (
+            <Card>
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <CardLabel>Art Unit {artUnitStats.art_unit}</CardLabel>
@@ -493,19 +630,12 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                 ];
                 const maxVal = Math.max(...bars.map(b => b.value), 1);
                 return <>
-                  <p className={`text-sm font-semibold mb-5 ${diffColor}`}>
-                    {diff >= 0 ? `+${diff.toFixed(1)}pp above` : `${diff.toFixed(1)}pp below`} art unit average · AU avg: {artUnitStats.avg_grant_rate.toFixed(1)}%
-                  </p>
+                  <p className={`text-sm font-semibold mb-5 ${diffColor}`}>{diff >= 0 ? `+${diff.toFixed(1)}pp above` : `${diff.toFixed(1)}pp below`} art unit average · AU avg: {artUnitStats.avg_grant_rate.toFixed(1)}%</p>
                   <div className="space-y-3 mb-5">
                     {bars.map(bar => (
                       <div key={bar.label}>
-                        <div className="flex justify-between text-xs mb-1.5">
-                          <span className={bar.bold ? 'font-semibold text-slate-800' : 'text-slate-400'}>{bar.label}</span>
-                          <span className={bar.bold ? 'font-bold text-slate-900' : 'text-slate-400'}>{bar.value.toFixed(1)}%</span>
-                        </div>
-                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${(bar.value / maxVal) * 100}%`, backgroundColor: bar.color }} />
-                        </div>
+                        <div className="flex justify-between text-xs mb-1.5"><span className={bar.bold ? 'font-semibold text-slate-800' : 'text-slate-400'}>{bar.label}</span><span className={bar.bold ? 'font-bold text-slate-900' : 'text-slate-400'}>{bar.value.toFixed(1)}%</span></div>
+                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${(bar.value / maxVal) * 100}%`, backgroundColor: bar.color }} /></div>
                       </div>
                     ))}
                   </div>
@@ -519,25 +649,34 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                       </div>
                     </div>
                   )}
+                  {/* Interview rate comparison */}
+                  {examiner.interview_allowance_rate != null && artUnitStats.avg_interview_allowance_rate && (
+                    <div className="pt-4 border-t border-slate-100 mt-4">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Interview Rate vs Art Unit</p>
+                      <div className="flex items-center gap-4">
+                        <div className="text-center flex-1"><p className="text-2xl font-extrabold text-slate-900">{examiner.interview_allowance_rate.toFixed(1)}%</p><p className="text-xs text-slate-400">This examiner</p></div>
+                        <div className="text-center">{(() => { const d = examiner.interview_allowance_rate! - artUnitStats.avg_interview_allowance_rate; return <p className={`text-sm font-bold ${d > 3 ? 'text-green-500' : d < -3 ? 'text-red-500' : 'text-slate-400'}`}>{d > 0 ? `+${d.toFixed(1)}pp` : `${d.toFixed(1)}pp`}</p>; })()}<p className="text-xs text-slate-400">vs AU avg</p></div>
+                        <div className="text-center flex-1"><p className="text-2xl font-extrabold text-slate-400">{artUnitStats.avg_interview_allowance_rate.toFixed(1)}%</p><p className="text-xs text-slate-400">AU average</p></div>
+                      </div>
+                    </div>
+                  )}
                 </>;
               })()}
-            </div>
-          )}
-
-          <div className="space-y-4">
+            </Card>
+          ) : <Card><p className="text-sm text-slate-400">No art unit data available.</p></Card>}
+          right={<>
             {similar.length > 0 && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <Card>
                 <CardLabel>Similar Examiners — Higher Allowance Rates</CardLabel>
-                <p className="text-xs text-slate-400 mb-4 leading-relaxed">Examiners in the same art unit with higher allowance rates. Useful if you have flexibility in continuation routing.</p>
+                <p className="text-xs text-slate-400 mb-4 leading-relaxed">Examiners in the same art unit with higher allowance rates.</p>
                 <div className="space-y-2.5">
                   {similar.map((ex) => {
                     const ec = rateColor(ex.grant_rate_3yr);
                     return (
-                      <Link key={ex.id} href={`/examiner/${ex.id}`}
-                        className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all group">
+                      <Link key={ex.id} href={`/examiner/${ex.id}`} className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all group">
                         <div>
                           <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">{ex.name}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">AU {ex.art_unit_number} · {ex.pendency_months?.toFixed(1) ?? '—'} mo avg pendency</p>
+                          <p className="text-xs text-slate-400 mt-0.5">AU {ex.art_unit_number} · {ex.pendency_months?.toFixed(1) ?? '—'} mo avg</p>
                         </div>
                         <div className="flex items-center gap-2.5 shrink-0">
                           <div className="text-right">
@@ -551,31 +690,42 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                   })}
                 </div>
                 <p className="text-xs text-slate-400 mt-3 italic">Assignment depends on filing details — consult strategy before targeting specific examiners.</p>
-              </div>
+              </Card>
             )}
-            <div className="rounded-2xl bg-slate-900 p-5 text-white">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full">Pro</span>
-                <p className="text-xs font-bold uppercase tracking-widest opacity-75">Full Peer Benchmarking</p>
-              </div>
-              <p className="text-sm opacity-75 leading-relaxed mb-3">Rank this examiner among all {artUnitStats?.examiner_count ?? ''} examiners in Art Unit {examiner.art_unit_number} across allowance rate, pendency, and rejection patterns.</p>
-              <button className="w-full text-xs font-bold bg-white text-slate-900 hover:bg-slate-100 transition-all rounded-xl py-2.5">Upgrade to Pro</button>
-            </div>
-          </div>
-        </div>
+
+            <Card>
+              <CardLabel>Art Unit Statistics</CardLabel>
+              {artUnitStats ? (
+                <div className="space-y-3">
+                  {[
+                    { label: 'Examiners in art unit', value: artUnitStats.examiner_count.toString() },
+                    { label: 'Art unit avg allowance rate', value: `${artUnitStats.avg_grant_rate.toFixed(1)}%` },
+                    { label: 'Art unit avg pendency', value: `${artUnitStats.avg_pendency_months.toFixed(1)} mo` },
+                    { label: 'Art unit avg interview rate', value: `${artUnitStats.avg_interview_allowance_rate.toFixed(1)}%` },
+                  ].map(s => (
+                    <div key={s.label} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                      <p className="text-xs text-slate-500">{s.label}</p>
+                      <p className="text-sm font-bold text-slate-900">{s.value}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="text-sm text-slate-400">No data available.</p>}
+            </Card>
+          </>}
+        />
       )}
 
       {/* ── HISTORY ───────────────────────────────────────────────────────── */}
       {activeTab === 'history' && (
-        <div className="space-y-6">
-          {showTrend && (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <TabGrid
+          left={showTrend ? (
+            <Card>
               <div className="flex items-center justify-between mb-5">
                 <CardLabel>Allowance Rate Trend</CardLabel>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${trendStyle}`}>{trendLabel}</span>
               </div>
               {(() => {
-                const W = 700; const H = 160; const px = 40; const py = 16;
+                const W = 500; const H = 160; const px = 40; const py = 16;
                 const cw = W - px * 2; const ch = H - py * 2;
                 const rates = trendEntries.map(e => e.r);
                 const min = Math.max(0, Math.min(...rates) - 8);
@@ -604,25 +754,26 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                   <p className="text-xs text-slate-500 leading-relaxed mt-4 italic">{trendNote}</p>
                 </>;
               })()}
-            </div>
+            </Card>
+          ) : (
+            <Card><p className="text-sm text-slate-400">Not enough historical data to show a trend.</p></Card>
           )}
-
-          {examiner.rejection_codes && (() => {
+          right={examiner.rejection_codes ? (() => {
             const codes = examiner.rejection_codes!;
             const max = Math.max(codes.non_final, codes.final, 1);
             const nfPct = codes.total > 0 ? ((codes.non_final / codes.total) * 100).toFixed(0) : '0';
             const fPct = codes.total > 0 ? ((codes.final / codes.total) * 100).toFixed(0) : '0';
             const finalRatio = codes.total > 0 ? (codes.final / codes.total) * 100 : 0;
             return (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <Card>
                 <div className="flex items-center justify-between mb-4">
-                  <CardLabel>Rejection Volume on Record</CardLabel>
+                  <CardLabel>Rejection Volume</CardLabel>
                   <span className="text-sm font-bold text-slate-700 -mt-3">{codes.total.toLocaleString()} total</span>
                 </div>
                 <div className="space-y-4">
                   {[
-                    { label: 'Non-Final Rejections', count: codes.non_final, pct: nfPct, color: '#f59e0b', note: 'Non-final rejections allow the applicant to amend claims and continue without additional fees.' },
-                    { label: 'Final Rejections', count: codes.final, pct: fPct, color: '#ef4444', note: 'Final rejections require an RCE, appeal, or abandonment — the costlier outcome for clients.' },
+                    { label: 'Non-Final Rejections', count: codes.non_final, pct: nfPct, color: '#f59e0b', note: 'Allow amendment without losing the application.' },
+                    { label: 'Final Rejections', count: codes.final, pct: fPct, color: '#ef4444', note: 'Require RCE, appeal, or abandonment.' },
                   ].map(bar => (
                     <div key={bar.label}>
                       <div className="flex justify-between text-sm mb-1.5"><span className="font-semibold text-slate-700">{bar.label}</span><span className="font-bold text-slate-900">{bar.count.toLocaleString()} ({bar.pct}%)</span></div>
@@ -632,42 +783,16 @@ export function ExaminerDashboard({ examiner, artUnitStats, similar }: {
                   ))}
                 </div>
                 <div className="mt-4 pt-4 border-t border-slate-100">
-                  <p className="text-xs text-slate-500 italic">
-                    {finalRatio > 40 ? 'Above-average final rejection rate — prepare strong first responses.'
-                      : finalRatio > 25 ? 'Moderate final rejection rate — some applications escalate to finals.'
-                      : 'Below-average final rejection rate — most rejections are non-final.'}
-                  </p>
+                  <p className="text-xs text-slate-500 italic">{finalRatio > 40 ? 'Above-average final rejection rate — prepare strong first responses.' : finalRatio > 25 ? 'Moderate final rejection rate.' : 'Below-average final rejection rate — mostly non-final.'}</p>
                 </div>
-              </div>
+              </Card>
             );
-          })()}
-        </div>
+          })() : <Card><p className="text-sm text-slate-400">No rejection data available.</p></Card>}
+        />
       )}
 
       {/* ── ASK AI ────────────────────────────────────────────────────────── */}
-      {activeTab === 'chat' && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="h-72 flex flex-col items-center justify-center gap-4 bg-slate-50 border-b border-slate-100 px-8">
-            <div className="text-center">
-              <p className="text-base font-bold text-slate-700 mb-2">AI Examiner Assistant</p>
-              <p className="text-sm text-slate-400 leading-relaxed max-w-md">
-                Ask anything about {examiner.name}. Get prosecution strategy, appeal analysis, claim drafting tips, and cost guidance — based on this examiner's actual data.
-              </p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {['Should I appeal this examiner?', 'What claim language works best?', 'How do I respond to a §103 rejection?', 'What is the fastest path to allowance?'].map(q => (
-                <button key={q} className="text-xs bg-white border border-slate-200 rounded-full px-3 py-1.5 text-slate-500 hover:border-blue-300 hover:text-blue-600 transition-all">{q}</button>
-              ))}
-            </div>
-          </div>
-          <div className="p-4 flex gap-3 items-center">
-            <input type="text" placeholder={`Ask anything about ${examiner.name}...`}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-300" />
-            <button className="bg-blue-600 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-blue-700 transition-all shrink-0">Send</button>
-          </div>
-          <p className="text-xs text-slate-400 text-center pb-3">AI chat powered by Claude — available with Pro access</p>
-        </div>
-      )}
+      {activeTab === 'chat' && <AIChatTab examiner={examiner} />}
     </div>
   );
 }
