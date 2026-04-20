@@ -12,6 +12,8 @@ const supabase = createClient(
 );
 
 export default function SignUpPage() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,14 +27,34 @@ export default function SignUpPage() {
     setError('');
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (!firstName.trim() || !lastName.trim()) { setError('Please enter your first and last name.'); return; }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/`,
+        data: { full_name: fullName },
+      },
     });
-    if (error) { setError(error.message); setLoading(false); }
-    else { setSuccess(true); }
+
+    if (signUpError) { setError(signUpError.message); setLoading(false); return; }
+
+    // Update profile with full name
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        email,
+        full_name: fullName,
+        plan: 'free',
+      });
+    }
+
+    setSuccess(true);
+    setLoading(false);
   };
 
   if (success) {
@@ -44,17 +66,13 @@ export default function SignUpPage() {
           </div>
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
             <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
             </div>
             <h2 className="text-xl font-extrabold text-slate-900 mb-2">Check your email</h2>
             <p className="text-sm text-slate-500 leading-relaxed mb-6">
               We sent a confirmation link to <span className="font-semibold text-slate-700">{email}</span>. Click it to activate your account.
             </p>
-            <Link href="/sign-in" className="inline-block text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-              Back to sign in
-            </Link>
+            <Link href="/sign-in" className="inline-block text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">Back to sign in</Link>
           </div>
         </div>
       </div>
@@ -67,7 +85,6 @@ export default function SignUpPage() {
         <div className="flex justify-center mb-8">
           <Link href="/"><Image src="/logo.png" alt="PatentIQ" width={140} height={36} className="object-contain h-9 w-auto" /></Link>
         </div>
-
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
           <h1 className="text-2xl font-extrabold text-slate-900 mb-1">Create your account</h1>
           <p className="text-sm text-slate-400 mb-6">Free to start. No credit card required.</p>
@@ -79,6 +96,20 @@ export default function SignUpPage() {
           )}
 
           <form onSubmit={handleSignUp} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">First Name</label>
+                <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} required
+                  placeholder="Jane"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Last Name</label>
+                <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} required
+                  placeholder="Smith"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+            </div>
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Email address</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
@@ -114,7 +145,6 @@ export default function SignUpPage() {
             <Link href="/privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
           </p>
         </div>
-
         <p className="text-center text-xs text-slate-400 mt-6">
           <Link href="/" className="hover:text-slate-600 transition-colors">← Back to search</Link>
         </p>
