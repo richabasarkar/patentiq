@@ -10,25 +10,25 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? '';
   if (q.length < 2) return NextResponse.json([]);
 
-  // Detect if query looks like an art unit number (3-4 digits)
   const isArtUnit = /^\d{3,4}$/.test(q);
-
   let data, error;
 
   if (isArtUnit) {
-    // Search by art unit number
     ({ data, error } = await supabase
       .from('examiners')
       .select('id, name, art_unit_number, grant_rate_3yr')
       .eq('art_unit_number', q)
+      .not('grant_rate_3yr', 'is', null)
+      .gt('grant_rate_3yr', 0)
       .order('grant_rate_3yr', { ascending: false })
       .limit(20));
   } else {
-    // Search by name
     ({ data, error } = await supabase
       .from('examiners')
       .select('id, name, art_unit_number, grant_rate_3yr')
       .ilike('name', `%${q}%`)
+      .not('grant_rate_3yr', 'is', null)
+      .gt('grant_rate_3yr', 0)
       .order('total_applications', { ascending: false })
       .limit(10));
   }
