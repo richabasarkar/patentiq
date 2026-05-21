@@ -102,6 +102,81 @@ function buildStrategy(examiner: Examiner) {
   return { personality, primaryAction, primaryDetail, primaryColor, prefs, confidence, confidenceNote, interviewImpact, interviewImpactColor };
 }
 
+// ── Markdown renderer for AI responses ───────────────────────────────────────
+function MarkdownMessage({ content }: { content: string }) {
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  const renderInline = (text: string): React.ReactNode => {
+    // Handle **bold**
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={idx} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  while (i < lines.length) {
+    const line = lines[i].trim();
+
+    // Skip empty lines but add spacing
+    if (line === '') {
+      elements.push(<div key={i} className="h-2" />);
+      i++;
+      continue;
+    }
+
+    // ## Headers → bold label
+    if (line.startsWith('## ')) {
+      elements.push(
+        <p key={i} className="font-bold text-slate-800 mt-3 mb-1">{renderInline(line.slice(3))}</p>
+      );
+      i++;
+      continue;
+    }
+
+    // ### Sub-headers
+    if (line.startsWith('### ')) {
+      elements.push(
+        <p key={i} className="font-semibold text-slate-700 mt-2 mb-1">{renderInline(line.slice(4))}</p>
+      );
+      i++;
+      continue;
+    }
+
+    // Bullet points - or *
+    if (line.startsWith('- ') || line.startsWith('* ')) {
+      const bulletLines: string[] = [];
+      while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
+        bulletLines.push(lines[i].trim().slice(2));
+        i++;
+      }
+      elements.push(
+        <ul key={`ul-${i}`} className="space-y-1 my-2">
+          {bulletLines.map((b, bi) => (
+            <li key={bi} className="flex items-start gap-2">
+              <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0 mt-2" />
+              <span>{renderInline(b)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    // Regular paragraph
+    elements.push(
+      <p key={i} className="mb-1">{renderInline(line)}</p>
+    );
+    i++;
+  }
+
+  return <div className="space-y-0.5">{elements}</div>;
+}
+
 // ── AI Chat ───────────────────────────────────────────────────────────────────
 function AIChatTab({ examiner }: { examiner: Examiner }) {
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
@@ -135,7 +210,15 @@ Key data about this examiner:
 - Allowance after 2nd OA: ${examiner.allowance_after_2_oa?.toFixed(1) ?? 'Unknown'}%
 - Avg Days to First OA: ${examiner.avg_days_to_first_oa ? (examiner.avg_days_to_first_oa / 30.4).toFixed(1) + ' months' : 'Unknown'}
 
-Provide concise, actionable advice. Use specific numbers from the data above. Be direct and practical — this attorney needs to make real decisions. Keep responses focused and under 200 words unless asked for more detail.`;
+Provide concise, actionable advice. Use specific numbers from the data above. Be direct and practical.
+
+Format your response cleanly:
+- Use **bold** for key terms and important numbers
+- Use bullet points for lists of factors
+- Use short paragraphs — one idea per paragraph
+- Start with a direct one-sentence answer, then explain
+- Keep responses under 200 words unless asked for more detail
+- Do NOT use ## headers — just bold text for emphasis`;
 
   const suggestedQuestions = [
     'Should I request an interview with this examiner?',
@@ -201,9 +284,7 @@ Provide concise, actionable advice. Use specific numbers from the data above. Be
                   ? 'bg-blue-600 text-white rounded-br-sm'
                   : 'bg-slate-50 text-slate-700 border border-slate-100 rounded-bl-sm'
               }`}>
-                {msg.content.split('\n').map((line, i) => (
-                  <span key={i}>{line}{i < msg.content.split('\n').length - 1 && <br />}</span>
-                ))}
+                {msg.role === 'user' ? msg.content : <MarkdownMessage content={msg.content} />}
               </div>
             </div>
           ))
