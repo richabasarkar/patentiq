@@ -23,11 +23,12 @@ function ExaminerSearch() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
-  const search = useCallback(async (q: string) => {
-    if (q.length < 2) { setResults([]); setIsOpen(false); return; }
+  const search = useCallback(async (q: string, full = false) => {
+    if (q.length < 1) { setResults([]); setIsOpen(false); return; }
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const url = `/api/search?q=${encodeURIComponent(q)}${full ? '&full=true' : ''}`;
+      const res = await fetch(url);
       const data: ExaminerResult[] = await res.json();
       setResults(data);
       setIsOpen(data.length > 0);
@@ -50,10 +51,13 @@ function ExaminerSearch() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen) return;
     if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex(i => Math.min(i + 1, results.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex(i => Math.max(i - 1, -1)); }
-    else if (e.key === 'Enter' && activeIndex >= 0) { e.preventDefault(); handleSelect(results[activeIndex]); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0) { handleSelect(results[activeIndex]); }
+      else if (query.length >= 1) { search(query, true); }
+    }
     else if (e.key === 'Escape') { setIsOpen(false); setActiveIndex(-1); }
   };
 
