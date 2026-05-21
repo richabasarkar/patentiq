@@ -94,6 +94,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
       </header>
 
       <div className="max-w-6xl mx-auto px-6 pt-20 pb-20">
+        {/* Hero */}
         <div className="bg-white border-b border-slate-100 -mx-6 px-6 pt-8 pb-8 mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2 mb-6">
             <div>
@@ -138,6 +139,7 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
                   {diff >= 0 ? `${diff.toFixed(1)}pp above USPTO average` : `${Math.abs(diff).toFixed(1)}pp below USPTO average`}
                 </p>
               </div>
+
               <div className="grid grid-cols-4 gap-3">
                 {[
                   { label: 'Applications', value: examiner.total_applications?.toLocaleString() ?? '—', sub: 'total analyzed' },
@@ -155,6 +157,23 @@ export default async function ExaminerPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
         </div>
+
+        {/* Limited data notice for newer examiners */}
+        {(examiner.grant_rate_3yr == null || examiner.total_applications == null) && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 mb-6 flex items-start gap-3">
+            <span className="text-amber-500 shrink-0 mt-0.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-amber-800 mb-0.5">Limited historical data available</p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                This examiner was recently added to our database. Detailed prosecution statistics, allowance rates, and rejection patterns are not yet available. Data will be populated as more historical records become available through periodic updates.
+              </p>
+            </div>
+          </div>
+        )}
 
         <ExaminerDashboard examiner={examiner} artUnitStats={artUnitStats} similar={similar} />
       </div>

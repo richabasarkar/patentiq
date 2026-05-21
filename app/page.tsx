@@ -23,12 +23,11 @@ function ExaminerSearch() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
-  const search = useCallback(async (q: string, full = false) => {
-    if (q.length < 1) { setResults([]); setIsOpen(false); return; }
+  const search = useCallback(async (q: string) => {
+    if (q.length < 2) { setResults([]); setIsOpen(false); return; }
     setIsLoading(true);
     try {
-      const url = `/api/search?q=${encodeURIComponent(q)}${full ? '&full=true' : ''}`;
-      const res = await fetch(url);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       const data: ExaminerResult[] = await res.json();
       setResults(data);
       setIsOpen(data.length > 0);
@@ -51,13 +50,10 @@ function ExaminerSearch() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen) return;
     if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex(i => Math.min(i + 1, results.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex(i => Math.max(i - 1, -1)); }
-    else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (activeIndex >= 0) { handleSelect(results[activeIndex]); }
-      else if (query.length >= 1) { search(query, true); }
-    }
+    else if (e.key === 'Enter' && activeIndex >= 0) { e.preventDefault(); handleSelect(results[activeIndex]); }
     else if (e.key === 'Escape') { setIsOpen(false); setActiveIndex(-1); }
   };
 
@@ -137,7 +133,7 @@ export default function HomePage() {
           Know your <span className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">examiner.</span>
         </h1>
         <p className="text-lg sm:text-xl text-slate-500 max-w-xl leading-relaxed mb-10">
-          Search 18,110 USPTO examiners. See allowance rates, rejection patterns, interview stats, appeal records, and prosecution strategy — in seconds.
+          Search 55,867 USPTO examiners. See allowance rates, rejection patterns, interview stats, appeal records, and prosecution strategy — in seconds.
         </p>
         <div className="w-full max-w-2xl mb-5">
           <ExaminerSearch />
@@ -147,7 +143,7 @@ export default function HomePage() {
         </p>
         <div className="flex flex-wrap justify-center gap-10 pt-10 border-t border-slate-100 w-full max-w-xl">
           {[
-            { value: '18,110', label: 'Active Examiners' },
+            { value: '55,867', label: 'Active Examiners' },
             { value: '14M+', label: 'Applications Analyzed' },
             { value: 'Free', label: 'Basic Access' },
           ].map((s) => (
@@ -168,7 +164,7 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { n: '01', title: 'Search any examiner', desc: 'Look up any of the 18,110 active USPTO patent examiners by name or art unit number.' },
+              { n: '01', title: 'Search any examiner', desc: 'Look up any of the 55,867 active USPTO patent examiners by name or art unit number.' },
               { n: '02', title: 'See their data', desc: 'View allowance rates, pendency, rejection patterns, PTAB appeal records, and interview success rates.' },
               { n: '03', title: 'File smarter', desc: 'Get a tailored prosecution strategy and cost estimate before you respond to an office action.' },
             ].map((step) => (
@@ -218,7 +214,7 @@ export default function HomePage() {
               <p className="text-4xl font-extrabold text-slate-900 mb-1">$0</p>
               <p className="text-xs text-slate-400 mb-6">Forever free</p>
               <ul className="space-y-3 mb-8">
-                {['Search all 18,110 examiners', 'Allowance rate & percentile', 'Rejection type breakdown', 'Prosecution funnel data', 'PTAB appeal record', 'Art unit comparison'].map(f => (
+                {['Search all 55,867 examiners', 'Allowance rate & percentile', 'Rejection type breakdown', 'Prosecution funnel data', 'PTAB appeal record', 'Art unit comparison'].map(f => (
                   <li key={f} className="flex items-center gap-2.5 text-sm text-slate-600">
                     <span className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center shrink-0">
                       <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 4l2 2 4-4" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -280,8 +276,8 @@ export default function HomePage() {
           <Image src="/logo.png" alt="PatentIQ" width={110} height={28} className="object-contain h-7 w-auto opacity-50" />
           <p className="text-xs text-slate-400 text-center">Data sourced from USPTO PatEx dataset · Not legal advice · © {new Date().getFullYear()} PatentIQ</p>
           <div className="flex gap-6 text-xs text-slate-400">
-            <a href="/privacy" className="hover:text-slate-600 transition-colors">Privacy</a>
-            <a href="/terms" className="hover:text-slate-600 transition-colors">Terms</a>
+            <a href="#" className="hover:text-slate-600 transition-colors">Privacy</a>
+            <a href="#" className="hover:text-slate-600 transition-colors">Terms</a>
           </div>
         </div>
       </footer>

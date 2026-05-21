@@ -20,25 +20,22 @@ export async function GET(req: NextRequest) {
       .from('examiners')
       .select('id, name, art_unit_number, grant_rate_3yr')
       .eq('art_unit_number', q)
-      .not('grant_rate_3yr', 'is', null)
-      .gt('grant_rate_3yr', 0)
-      .order('grant_rate_3yr', { ascending: false })
+      .order('grant_rate_3yr', { ascending: false, nullsFirst: false })
       .limit(limit));
   } else {
     // Split query into words and match each word anywhere in the name
     const words = q.split(' ').filter(Boolean);
     let query = supabase
       .from('examiners')
-      .select('id, name, art_unit_number, grant_rate_3yr')
-      .not('grant_rate_3yr', 'is', null)
-      .gt('grant_rate_3yr', 0);
+      .select('id, name, art_unit_number, grant_rate_3yr');
 
     for (const word of words) {
       query = query.ilike('name', `%${word}%`);
     }
 
     ({ data, error } = await query
-      .order('total_applications', { ascending: false })
+      .order('grant_rate_3yr', { ascending: false, nullsFirst: false })
+      .order('total_applications', { ascending: false, nullsFirst: false })
       .limit(limit));
   }
 
